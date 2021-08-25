@@ -142,6 +142,7 @@ void PPMImage_display(char *playername, char *fname) {
 }
 
 int main(void) {
+    printf("my firt time using git, so here's a commit test.\n");
     //generate_RGB_collage_set();
     //PPMColor c = PPMColor_create_val(RGB_MAGENTA);
     PPMImage *img = PPMImage_create(256, 256, NULL);
