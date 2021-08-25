@@ -56,12 +56,12 @@ PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMPixel *color) {
     ret->h = h;
     ret->data = malloc(w * h * sizeof(PPMPixel));
 
-    char flag = 0;
     if (color) {
         for (int i = 0; i < w * h; i++) {
             ret->data[i] = *color;
         }
-    } else {
+    } 
+    else {
         PPMPixel black = PPMPixel_create_val(0x00, 0x00, 0x00);
         for (int i = 0; i < w * h; i++) {
             ret->data[i] = black;
@@ -183,14 +183,16 @@ void PPMImage_write(const char *filename, PPMImage *img) {
 }
 
 void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color) {
-    for (int rows = 0; rows < img->h; rows++) {
+    /*for (int rows = 0; rows < img->h; rows++) {
         for (int cols = 0; cols < img->w; cols++) {
             if ((cols == px) && (rows == py)) {
                 int idx = index2Dto1D(rows, cols, img->w);
                 img->data[idx] = color;
             }
         }
-    }
+    }*/
+    int idx = index2Dto1D(px, py, img->w);
+    img->data[idx] = color;
 }
 
 void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color) {
@@ -198,7 +200,7 @@ void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColo
     int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
     int err = (dx > dy ? dx : -dy) / 2, e2;
 
-    for (;;) {
+    while(1) {
         //setPixel(x0, y0);
         PPMImage_draw_pixel(image, x0, y0, color);
         if (x0 == x1 && y0 == y1) break;
