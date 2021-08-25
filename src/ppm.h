@@ -8,14 +8,12 @@
 /* Some RGB colors */
 #define RGB_BLACK 0x000000
 #define RGB_WHITE 0xFFFFFF
-
 #define RGB_RED 0xFF0000
 #define RGB_GREEN 0x00FF00
 #define RGB_BLUE 0x0000FF
-
-#define RGB_MAGENTA (RGB_RED | RGB_BLUE)
-#define RGB_YELLOW (RGB_RED | RGB_GREEN)
-#define RGB_CYAN (RGB_BLUE | RGB_GREEN)
+#define RGB_MAGENTA 0xFF00FF
+#define RGB_YELLOW 0xFFFF00
+#define RGB_CYAN 0x00FFFF
 
 typedef struct {
     unsigned char r;
@@ -40,3 +38,7 @@ typedef struct {
 PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMPixel *color);
 PPMImage *PPMImage_read(const char *filename);
 void PPMImage_write(const char *filename, PPMImage *img);
+
+void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color);
+void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color);
+void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, int filled);

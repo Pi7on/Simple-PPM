@@ -181,3 +181,48 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fwrite(img->data, sizeof(PPMPixel), img->w * img->h, fp);
     fclose(fp);
 }
+
+void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color) {
+    for (int rows = 0; rows < img->h; rows++) {
+        for (int cols = 0; cols < img->w; cols++) {
+            if ((cols == px) && (rows == py)) {
+                int idx = index2Dto1D(rows, cols, img->w);
+                img->data[idx] = color;
+            }
+        }
+    }
+}
+
+void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color) {
+    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2, e2;
+
+    for (;;) {
+        //setPixel(x0, y0);
+        PPMImage_draw_pixel(image, x0, y0, color);
+        if (x0 == x1 && y0 == y1) break;
+        e2 = err;
+        if (e2 > -dx) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, int filled) {
+    if (filled) {
+        for (int i = 0; i < h; i++) {
+            PPMImage_draw_line(image, x, y + i, x + w, y + i, color);
+        }
+    } else {
+        PPMImage_draw_line(image, x, y, x + w, y, color);
+        PPMImage_draw_line(image, x + w, y, x + w, y + h, color);
+        PPMImage_draw_line(image, x + w, y + h, x, y + h, color);
+        PPMImage_draw_line(image, x, y + h, x, y, color);
+    }
+}
