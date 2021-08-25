@@ -21,6 +21,8 @@ typedef struct {
     unsigned char b;
 } PPMPixel;
 
+int index2Dto1D(int row_index, int col_index, int matrix_width);
+
 PPMPixel *PPMPixel_create_ref(unsigned char r, unsigned char g, unsigned char b);
 PPMPixel PPMPixel_create_val(unsigned char r, unsigned char g, unsigned char b);
 void PPMPixel_set(PPMPixel *p, unsigned char r, unsigned char g, unsigned char b);
