@@ -8,62 +8,6 @@ int index2Dto1D(int row_index, int col_index, int matrix_width) {
     return (matrix_width * row_index) + col_index;
 }
 
-void generate_RGB_collage_set() {
-    PPMImage *frame = PPMImage_create(256, 256, PPMColor_create_ref(0x000000));
-    for (int i = 0; i < 6; i++) {
-        for (int r = 0; r < 256; r++) {
-            for (int g = 0; g < 256; g++) {
-                for (int b = 0; b < 256; b++) {
-                    int index = index2Dto1D(g, b, frame->w);
-                    switch (i) {
-                        case 0:
-                            frame->data[index] = PPMPixel_create_val(r, g, b);
-                            break;
-                        case 1:
-                            frame->data[index] = PPMPixel_create_val(r, b, g);
-                            break;
-                        case 2:
-                            frame->data[index] = PPMPixel_create_val(g, b, r);
-                            break;
-                        case 3:
-                            frame->data[index] = PPMPixel_create_val(b, g, r);
-                            break;
-                        case 4:
-                            frame->data[index] = PPMPixel_create_val(b, r, g);
-                            break;
-                        case 5:
-                            frame->data[index] = PPMPixel_create_val(g, r, b);
-
-                            break;
-                        default:
-                            printf("error: should not be here.\n");
-                            exit(1);
-                    }
-                }
-            }
-            char fname[128];
-            snprintf(fname, sizeof(fname), "..\\data\\frames\\frame%03d.ppm", r);
-            printf("Writing frame %d ... ", r);
-            PPMImage_write(fname, frame);
-            printf("OK.\n");
-        }
-
-        //printf("Encoding video ... ");
-        //system("ffmpeg -hide_banner -loglevel error -i \"..\\data\\frames\\frame\%03d.ppm\" -vcodec libx264 -crf 0 \"..\\data\\frames\\out.mp4\"");
-        //printf("OK.\n");
-
-        printf("Generating collage %d ... ", i);
-        char command[256];
-        snprintf(command, sizeof(command), "ffmpeg -hide_banner -loglevel error -i \"..\\data\\frames\\frame%%03d.ppm\" -filter_complex \"tile=16x16\" \"..\\data\\frames\\collageRGB_%d.png\"", i);
-        system(command);
-        printf("OK.\n");
-
-        printf("Deleting frames ... ");
-        system("del ..\\data\\frames\\*.ppm");
-        printf("OK.\n");
-    }
-}
-
 typedef struct {
     int x;
     int y;
@@ -74,21 +18,6 @@ typedef enum {
     false,
     true
 } bool;
-
-/* void PPM_draw_line(PPMImage *canvas, V2i a, V2i b, PPMColor c) {
-    for (int canv_y = 0; canv_y < canvas->h; canv_y++) {
-        for (int canv_x = 0; canv_x < canvas->h; canv_x++) {
-            int draw_p1 = ((canv_x == a.x) && (canv_y == a.y));
-            int draw_p2 = ((canv_x == b.x) && (canv_y == b.y));
-
-            if (draw_p1 || draw_p2) {
-                int index = index2Dto1D(canv_y, canv_x, canvas->w);
-                canvas->data[index] = c;
-            }
-        }
-    }
-}
-*/
 
 void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color) {
     for (int rows = 0; rows < img->h; rows++) {
@@ -141,8 +70,63 @@ void PPMImage_display(char *playername, char *fname) {
     system(command);
 }
 
-int main(void) {
-    //generate_RGB_collage_set();
+void generate_RGB_sprectrum_collage_set() {
+    PPMImage *frame = PPMImage_create(256, 256, PPMColor_create_ref(0x000000));
+    for (int i = 0; i < 6; i++) {
+        for (int r = 0; r < 256; r++) {
+            for (int g = 0; g < 256; g++) {
+                for (int b = 0; b < 256; b++) {
+                    int index = index2Dto1D(g, b, frame->w);
+                    switch (i) {
+                        case 0:
+                            frame->data[index] = PPMPixel_create_val(r, g, b);
+                            break;
+                        case 1:
+                            frame->data[index] = PPMPixel_create_val(r, b, g);
+                            break;
+                        case 2:
+                            frame->data[index] = PPMPixel_create_val(g, b, r);
+                            break;
+                        case 3:
+                            frame->data[index] = PPMPixel_create_val(b, g, r);
+                            break;
+                        case 4:
+                            frame->data[index] = PPMPixel_create_val(b, r, g);
+                            break;
+                        case 5:
+                            frame->data[index] = PPMPixel_create_val(g, r, b);
+
+                            break;
+                        default:
+                            printf("error: should not be here.\n");
+                            exit(1);
+                    }
+                }
+            }
+            char fname[128];
+            snprintf(fname, sizeof(fname), "..\\data\\RGB_spectrum\\spec%03d.ppm", r);
+            printf("Writing frame %d ... ", r);
+            PPMImage_write(fname, frame);
+            printf("OK.\n");
+        }
+
+        //printf("Encoding video ... ");
+        //system("ffmpeg -hide_banner -loglevel error -i \"..\\data\\frames\\frame\%03d.ppm\" -vcodec libx264 -crf 0 \"..\\data\\frames\\out.mp4\"");
+        //printf("OK.\n");
+
+        printf("Generating collage %d ... ", i);
+        char command[256];
+        snprintf(command, sizeof(command), "ffmpeg -hide_banner -loglevel error -i \"..\\data\\RGB_spectrum\\spec%%03d.ppm\" -filter_complex \"tile=16x16\" \"..\\data\\RGB_spectrum\\specRGB_%d.png\"", i);
+        system(command);
+        printf("OK.\n");
+
+        printf("Deleting frames ... ");
+        system("del ..\\data\\RGB_spectrum\\*.ppm");
+        printf("OK.\n");
+    }
+}
+
+void generate_amogus() {
     //PPMColor c = PPMColor_create_val(RGB_MAGENTA);
     PPMImage *img = PPMImage_create(256, 256, NULL);
 
@@ -175,7 +159,12 @@ int main(void) {
     int vish = 7;
     PPMImage_draw_rect(img, visx, visy, visw, vish, PPMColor_create_val(0xEEEEEE), 1);
 
-    PPMImage_write("..\\data\\mag.ppm", img);
-    PPMImage_display("C:\\IMAGEGLASS\\ImageGlass.exe", "..\\data\\mag.ppm");
+    PPMImage_write("..\\data\\amogus.ppm", img);
+}
+
+int main(void) {
+    //generate_RGB_sprectrum_collage_set();
+    generate_amogus();
+    PPMImage_display("C:\\IMAGEGLASS\\ImageGlass.exe", "..\\data\\amogus.ppm");
     return 0;
 }
