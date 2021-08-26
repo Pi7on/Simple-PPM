@@ -245,16 +245,15 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
         exit(1);
     }
 
-    printf("W:%d H:%d\n", out->w, out->h);
-    for (unsigned int rows = 0; rows < out->h; rows++) {
-        const float v = ((float)rows) / ((float)(out->h));  // v: current position on the Y axis (in percentage)
-        for (unsigned int cols = 0; cols < out->w; cols++) {
-            const float u = ((float)cols) / ((float)(out->w));  // u: current position on the X axis (in percentage)
+    for (unsigned int y_out = 0; y_out < out->h; y_out++) {
+        const float v = ((float)y_out) / ((float)(out->h));  // v: current position on the output's Y axis (in percentage)
+        for (unsigned int x_out = 0; x_out < out->w; x_out++) {
+            const float u = ((float)x_out) / ((float)(out->w));  // u: current position on the output's X axis (in percentage)
 
-            const int x = (int)(in->w * u);
-            const int y = (int)(in->h * v);
+            const int x_in = (int)(in->w * u);
+            const int y_in = (int)(in->h * v);
 
-            out->data[rows * out->w + cols] = in->data[y * in->w + x];
+            out->data[y_out * out->w + x_out] = in->data[y_in * in->w + x_in];
         }
     }
 }
