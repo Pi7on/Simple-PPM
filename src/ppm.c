@@ -245,6 +245,8 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
         exit(1);
     }
 
+    // TODO: use double when calculating "u" and "v" ?
+
     for (unsigned int y_out = 0; y_out < out->h; y_out++) {
         const float v = ((float)y_out) / ((float)(out->h));  // v: current position on the output's Y axis (in percentage)
         for (unsigned int x_out = 0; x_out < out->w; x_out++) {
@@ -256,6 +258,23 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
             out->data[y_out * out->w + x_out] = in->data[y_in * in->w + x_in];
         }
     }
+}
+
+PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h) {
+    PPMImage *out = PPMImage_create(assumed_w, assumed_h, NULL);
+    double half_pixel_offest = 0.5;
+    for (unsigned int y_out = 0; y_out < out->h; y_out++) {
+        const double v = ((double)y_out) / ((double)(out->h));  // v: current position on the output's Y axis (in percentage)
+        for (unsigned int x_out = 0; x_out < out->w; x_out++) {
+            const double u = ((double)x_out) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
+
+            const int x_in = round(in->w * u + half_pixel_offest);
+            const int y_in = round(in->h * v + half_pixel_offest);
+
+            out->data[y_out * out->w + x_out] = in->data[y_in * in->w + x_in];
+        }
+    }
+    return out;
 }
 
 /*

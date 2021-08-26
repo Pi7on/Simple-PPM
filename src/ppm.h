@@ -53,6 +53,7 @@ void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor co
 
 void PPM_resize_nearest(PPMImage *in, PPMImage *out);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
+
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out);
 
 #endif /* SIMPLE_PPM_H */
