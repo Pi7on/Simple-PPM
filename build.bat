@@ -1,5 +1,7 @@
 @echo off
 
+set OPT_LEVEL=/O2
+
 pushd bin
-cl -Zi ..\src\main.c ..\src\ppm.c
+cl -Zi %OPT_LEVEL% ..\src\main.c ..\src\ppm.c
 popd
