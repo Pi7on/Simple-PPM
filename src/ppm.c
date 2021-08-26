@@ -75,6 +75,13 @@ PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMPixel *color) {
     return ret;
 }
 
+void PPMImage_destroy(PPMImage *img) {
+    // don't need to check if img == NULL, free already handles it.
+    // https://stackoverflow.com/questions/6084218/is-it-good-practice-to-free-a-null-pointer-in-c/6084233
+    free(img->data);
+    free(img);
+}
+
 PPMImage *PPMImage_read(const char *filename) {
     const char PPM_MAGIC[2] = "P6";
     char buff[16];
@@ -224,8 +231,15 @@ void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor co
     }
 }
 
-PPMImage *PPM_resize_nearest(PPMImage *in, int out_width, int out_height) {
-    PPMImage *out = PPMImage_create(out_width, out_height, NULL);
+void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
+    if (!in) {
+        fprintf(stderr, "PPM_resize_nearest received null image as input.\n");
+        exit(1);
+    }
+    if (!out) {
+        fprintf(stderr, "PPM_resize_nearest received null image as output.\n");
+        exit(1);
+    }
 
     for (unsigned int rows = 0; rows < out->h; rows++) {
         const float v = ((float)rows) / ((float)(out->h));  // v: current position on the Y axis (in percentage)
@@ -238,13 +252,10 @@ PPMImage *PPM_resize_nearest(PPMImage *in, int out_width, int out_height) {
             out->data[rows * out->w + cols] = in->data[x * in->w + y];
         }
     }
-    return out;
 }
 
 /*
-PPMImage *PPM_resize_bilinear(PPMImage *in, int out_width, int out_height) {
-    PPMImage *out = PPMImage_create(out_width, out_height, NULL);
+PPM_resize_bilinear(PPMImage *in,PPMImage *out,  int out_width, int out_height) {
     out->data = in->data;
-    return out;
 }
 */
