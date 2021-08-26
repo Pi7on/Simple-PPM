@@ -230,7 +230,7 @@ PPMImage *PPM_resize_nearest(PPMImage *in, int out_width, int out_height) {
     for (unsigned int rows = 0; rows < out->h; rows++) {
         const float v = ((float)rows) / ((float)(out->h));  // v: current position on the Y axis (in percentage)
         for (unsigned int cols = 0; cols < out->w; cols++) {
-            const float u = ((float)cols) / ((float)(out->w));  // v: current position on the X axis (in percentage)
+            const float u = ((float)cols) / ((float)(out->w));  // u: current position on the X axis (in percentage)
 
             const int x = (int)(in->w * u);
             const int y = (int)(in->h * v);
