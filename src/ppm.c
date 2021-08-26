@@ -172,6 +172,7 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fp = fopen(filename, "wb");
     if (!fp) {
         fprintf(stderr, "Unable to open file '%s'\n", filename);
+
         exit(1);
     }
 
@@ -188,7 +189,10 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fprintf(fp, "%d\n", MAX_CHANNEL_VALUE);
 
     // pixel data
-    fwrite(img->data, sizeof(PPMPixel), img->w * img->h, fp);
+    if (fwrite(img->data, sizeof(PPMPixel), img->w * img->h, fp) != img->w * img->h) {
+        fprintf(stderr, "Something went wrong while writing the data of %s.\n", filename);
+    }
+
     fclose(fp);
 }
 
@@ -241,6 +245,7 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
         exit(1);
     }
 
+    printf("W:%d H:%d\n", out->w, out->h);
     for (unsigned int rows = 0; rows < out->h; rows++) {
         const float v = ((float)rows) / ((float)(out->h));  // v: current position on the Y axis (in percentage)
         for (unsigned int cols = 0; cols < out->w; cols++) {
@@ -249,7 +254,7 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
             const int x = (int)(in->w * u);
             const int y = (int)(in->h * v);
 
-            out->data[rows * out->w + cols] = in->data[x * in->w + y];
+            out->data[rows * out->w + cols] = in->data[y * in->w + x];
         }
     }
 }
