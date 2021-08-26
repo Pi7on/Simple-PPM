@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define CREATOR "ThePi7on"
-#define RGB_COMPONENT_COLOR 255
+#define MAX_CHANNEL_VALUE 255
 #define NOOP
 
 /* Some RGB colors */
@@ -33,6 +33,8 @@ void PPMPixel_set(PPMPixel *p, unsigned char r, unsigned char g, unsigned char b
 typedef PPMPixel PPMColor;
 PPMColor *PPMColor_create_ref(unsigned int hexcol);
 PPMColor PPMColor_create_val(unsigned int hexcol);
+
+/* TODO: Add support for writing and reading 24 bit images */
 
 typedef struct {
     unsigned int w;

@@ -132,7 +132,7 @@ PPMImage *PPMImage_read(const char *filename) {
     }
 
     //check rgb component depth
-    if (rgb_comp_color != RGB_COMPONENT_COLOR) {
+    if (rgb_comp_color != MAX_CHANNEL_VALUE) {
         fprintf(stderr, "'%s' does not have 8-bits components\n", filename);
         exit(1);
     }
@@ -178,7 +178,7 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fprintf(fp, "%d %d\n", img->w, img->h);
 
     // rgb component depth
-    fprintf(fp, "%d\n", RGB_COMPONENT_COLOR);
+    fprintf(fp, "%d\n", MAX_CHANNEL_VALUE);
 
     // pixel data
     fwrite(img->data, sizeof(PPMPixel), img->w * img->h, fp);
