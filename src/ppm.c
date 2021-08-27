@@ -245,8 +245,7 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
         exit(1);
     }
 
-    // TODO: use double when calculating "u" and "v" ?
-
+    // TODO: use double when calculating "u" and "v" ???
     for (unsigned int y_out = 0; y_out < out->h; y_out++) {
         const float v = ((float)y_out) / ((float)(out->h));  // v: current position on the output's Y axis (in percentage)
         for (unsigned int x_out = 0; x_out < out->w; x_out++) {
@@ -268,6 +267,7 @@ PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int
         for (unsigned int x_out = 0; x_out < out->w; x_out++) {
             const double u = ((double)x_out) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
 
+            /* TODO: add explanation for why we need this half-pixel offset */
             const int x_in = round(in->w * u + half_pixel_offest);
             const int y_in = round(in->h * v + half_pixel_offest);
 
@@ -277,8 +277,92 @@ PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int
     return out;
 }
 
-/*
-PPM_resize_bilinear(PPMImage *in,PPMImage *out,  int out_width, int out_height) {
-    out->data = in->data;
+double lerp_double(const double a, const double b, const double weight) {
+    return (a * ((double)1.0 - weight) + (b * weight));
 }
-*/
+
+PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight) {
+    PPMPixel ret;
+    /* eg: a.r = 255; b.r = 128; weight = 0.5
+    ret.r = (255 * (1 - 0.5)) + (b * 0.5) --> round to int --> cast to uchar */
+
+    ret.r = (unsigned char)lerp_double(a.r, b.r, weight);
+    ret.g = (unsigned char)lerp_double(a.g, b.g, weight);
+    ret.b = (unsigned char)lerp_double(a.b, b.b, weight);
+    return ret;
+}
+
+void PPM_resize_bilinear(PPMImage *in, PPMImage *out, int out_width, int out_height) {
+    if (!in) {
+        fprintf(stderr, "PPM_resize_nearest received null image as input.\n");
+        exit(1);
+    }
+    if (!out) {
+        fprintf(stderr, "PPM_resize_nearest received null image as output.\n");
+        exit(1);
+    }
+
+    //scalign factors
+    float sfy = out->h / in->h;
+    float sfx = out->w / in->w;
+
+    // TODO: use double when calculating "u" and "v" ???
+    for (unsigned int y_out = 0; y_out < out->h; y_out++) {
+        const double v = ((double)y_out) / ((double)(out->h));  // v: current position on the output's Y axis (in percentage)
+        for (unsigned int x_out = 0; x_out < out->w; x_out++) {
+            const double u = ((double)x_out) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
+
+            // why -0.5?
+            const double x_raw = (in->w * u) - 0.5;
+            const double y_raw = (in->h * v) - 0.5;
+
+            // floor or round ?
+            const double x_weight = x_raw - floor(x_raw);
+            const double y_weight = y_raw - floor(y_raw);
+
+            const int x_in = (int)x_raw;
+            const int y_in = (int)y_raw;
+            /*
+            printf("[yraw: %0.15f xraw:%0.15f] [y_wei: %0.15f x_wei: %0.15f] [y_in: %3d x_in: %3d] -> [y_out: %3d x_out: %3d]\n",
+                   y_raw, x_raw,
+                   y_weight, x_weight,
+                   y_in, x_in,
+                   y_out, x_out);
+            */
+
+            PPMPixel sample_y0x0;
+            PPMPixel sample_y0x1;
+            PPMPixel sample_y1x0;
+            PPMPixel sample_y1x1;
+
+            sample_y0x0 = in->data[y_in * in->w + x_in];
+
+            if (x_in + 1 < in->w) {
+                sample_y0x1 = in->data[y_in * in->w + (x_in + 1)];
+            } else {
+                //sample_y0x1 = in->data[y_in * in->w + x_in];
+                sample_y0x1 = sample_y0x0;
+            }
+
+            if (y_in + 1 < in->h) {
+                sample_y1x0 = in->data[(y_in + 1) * in->w + x_in];
+                sample_y1x1 = in->data[(y_in + 1) * in->w + (x_in + 1)];
+            } else {
+                sample_y1x0 = in->data[y_in * in->w + x_in];
+                sample_y1x1 = in->data[y_in * in->w + (x_in + 1)];
+            }
+
+            PPMPixel lerp_1 = PPMPixel_lerp(sample_y0x0, sample_y0x1, x_weight);
+            PPMPixel lerp_2 = PPMPixel_lerp(sample_y1x0, sample_y1x1, x_weight);
+
+            PPMPixel lerp_final = PPMPixel_lerp(lerp_1, lerp_2, y_weight);
+
+            if (y_out < sfy / 2 || x_out < sfx / 2) {
+                //out->data[y_out * out->w + x_out] = PPMPixel_create_val(0, 255, 0);
+                out->data[y_out * out->w + x_out] = lerp_final;
+            } else {
+                out->data[y_out * out->w + x_out] = lerp_final;
+            }
+        }
+    }
+}

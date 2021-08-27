@@ -51,9 +51,12 @@ void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color);
 void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color);
 void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, int filled);
 
+/* go back to returnign a pointer to ppmimage? */
 void PPM_resize_nearest(PPMImage *in, PPMImage *out);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
+double lerp_double(const double a, const double b, const double weight);
+PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight);
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out);
 
 #endif /* SIMPLE_PPM_H */
