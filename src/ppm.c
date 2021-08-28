@@ -293,6 +293,16 @@ double clamp_double(double v, double min, double max) {
     return v;
 }
 
+int clamp_int(int v, int min, int max) {
+    if (v < min) {
+        return min;
+    }
+    if (v > max) {
+        return max;
+    }
+    return v;
+}
+
 double lerp_double(const double a, const double b, const double weight) {
     return (a * ((double)1.0 - weight) + (b * weight));
 }
@@ -313,7 +323,7 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight) {
 */
 
 // TODO: comment this better.
-void PPM_resize_bilinear(PPMImage *in, PPMImage *out, int out_width, int out_height) {
+void PPM_resize_bilinear(PPMImage *in, PPMImage *out) {
     if (!in) {
         fprintf(stderr, "PPM_resize_nearest received null image as input.\n");
         exit(1);
@@ -336,13 +346,13 @@ void PPM_resize_bilinear(PPMImage *in, PPMImage *out, int out_width, int out_hei
             const double x_weight = x_raw - floor(x_raw);
             const double y_weight = y_raw - floor(y_raw);
 
-            double x_raw_clamped = clamp_double(x_raw, 0, in->w - 1);
-            double y_raw_clamped = clamp_double(y_raw, 0, in->h - 1);
+            int y_int = (int)floor(y_raw);
+            int x_int = (int)floor(x_raw);
 
-            PPMPixel sample_top_left = in->data[(int)floor(x_raw_clamped) * in->w + (int)floor(y_raw_clamped)];
-            PPMPixel sample_top_right = in->data[(int)ceil(x_raw_clamped) * in->w + (int)floor(y_raw_clamped)];
-            PPMPixel sample_bottom_left = in->data[(int)floor(x_raw_clamped) * in->w + (int)ceil(y_raw_clamped)];
-            PPMPixel sample_bottom_right = in->data[(int)ceil(x_raw_clamped) * in->w + (int)ceil(y_raw_clamped)];
+            PPMPixel sample_top_left = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int, 0, in->w)];
+            PPMPixel sample_top_right = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];
+            PPMPixel sample_bottom_left = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int, 0, in->w)];
+            PPMPixel sample_bottom_right = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];
 
             PPMPixel lerp_top = PPMPixel_lerp(sample_top_left, sample_top_right, x_weight);
             PPMPixel lerp_bottom = PPMPixel_lerp(sample_bottom_left, sample_bottom_right, x_weight);
