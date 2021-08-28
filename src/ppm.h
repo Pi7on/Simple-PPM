@@ -55,6 +55,7 @@ void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor co
 void PPM_resize_nearest(PPMImage *in, PPMImage *out);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
+double clamp_double(double v, double min, double max);
 double lerp_double(const double a, const double b, const double weight);
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight);
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out);

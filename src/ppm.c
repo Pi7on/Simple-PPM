@@ -283,6 +283,16 @@ PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int
     return out;
 }
 
+double clamp_double(double v, double min, double max) {
+    if (v < min) {
+        return min;
+    }
+    if (v > max) {
+        return max;
+    }
+    return v;
+}
+
 double lerp_double(const double a, const double b, const double weight) {
     return (a * ((double)1.0 - weight) + (b * weight));
 }
@@ -299,49 +309,10 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight) {
  Resources:
     - https://stackoverflow.com/questions/11991701/image-interpolation-bicubic-or-bilinear-what-if-there-are-no-neighbor-pixels
     - https://tinaja.com/glib/pixintpl.pdf
+    - https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
 */
 
-/*
-typedef struct {
-    // top edge status
-unsigned char under_y_under_x;
-unsigned char under_y_ok_x;
-unsigned char under_y_over_x;
-
-// right edge status
-unsigned char ok_y_over_x;
-unsigned char over_y_over_y;
-
-// bottom edge status
-unsigned char over_y_ok_x;
-unsigned char over_y_under_x;
-
-// left edge status
-unsigned char ok_y_under_x;
-}
-pixel_pos_state;
-
-pixel_pos_state pps = {
-    0b00000001,
-    0b00000010,
-    0b00000100,
-    0b00001000,
-    0b00010000,
-    0b00100000,
-    0b01000000,
-    0b10000000};
-*/
-
-double clamp(double v, double min, double max) {
-    if (v < min) {
-        return min;
-    }
-    if (v > max) {
-        return max;
-    }
-    return v;
-}
-
+// TODO: comment this better.
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out, int out_width, int out_height) {
     if (!in) {
         fprintf(stderr, "PPM_resize_nearest received null image as input.\n");
@@ -352,8 +323,6 @@ void PPM_resize_bilinear(PPMImage *in, PPMImage *out, int out_width, int out_hei
         exit(1);
     }
 
-    // important: https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
-
     // cy: current y position on output image
     // cx: current x position on output image
     for (unsigned int cy = 0; cy < out->h; cy++) {
@@ -361,42 +330,19 @@ void PPM_resize_bilinear(PPMImage *in, PPMImage *out, int out_width, int out_hei
         for (unsigned int cx = 0; cx < out->w; cx++) {
             const double u = ((double)cx) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
 
-            // understand why i do this operation
             double y_raw = (in->h * v) - 0.5;
             double x_raw = (in->w * u) - 0.5;
 
-            // floored coordiinates (to actiually use them)
-            //const int x_in = (int)x_raw;
-            //const int y_in = (int)y_raw;
-
-            // we use floor() and not  a cast since x_raw and y_raw can be negative where u or v are 0
             const double x_weight = x_raw - floor(x_raw);
             const double y_weight = y_raw - floor(y_raw);
 
-            PPMPixel sample_top_left;
-            PPMPixel sample_top_right;
-            PPMPixel sample_bottom_left;
-            PPMPixel sample_bottom_right;
+            double x_raw_clamped = clamp_double(x_raw, 0, in->w - 1);
+            double y_raw_clamped = clamp_double(y_raw, 0, in->h - 1);
 
-            // if all pixels are sampleable without going out of input images's bounds
-            if ((int)floor(y_raw) >= 0 &&
-                (int)ceil(y_raw) <= in->h - 1 &&
-                (int)floor(x_raw) >= 0 &&
-                (int)ceil(x_raw) <= in->w - 1) {
-                sample_top_left = in->data[(int)floor(x_raw) * in->w + (int)floor(y_raw)];
-                sample_top_right = in->data[(int)ceil(x_raw) * in->w + (int)floor(y_raw)];
-                sample_bottom_left = in->data[(int)floor(x_raw) * in->w + (int)ceil(y_raw)];
-                sample_bottom_right = in->data[(int)ceil(x_raw) * in->w + (int)ceil(y_raw)];
-
-            } else {
-                double x_raw_clamped = clamp(x_raw, 0, in->w - 1);
-                double y_raw_clamped = clamp(y_raw, 0, in->h - 1);
-
-                sample_top_left = in->data[(int)floor(x_raw_clamped) * in->w + (int)floor(y_raw_clamped)];
-                sample_top_right = in->data[(int)ceil(x_raw_clamped) * in->w + (int)floor(y_raw_clamped)];
-                sample_bottom_left = in->data[(int)floor(x_raw_clamped) * in->w + (int)ceil(y_raw_clamped)];
-                sample_bottom_right = in->data[(int)ceil(x_raw_clamped) * in->w + (int)ceil(y_raw_clamped)];
-            }
+            PPMPixel sample_top_left = in->data[(int)floor(x_raw_clamped) * in->w + (int)floor(y_raw_clamped)];
+            PPMPixel sample_top_right = in->data[(int)ceil(x_raw_clamped) * in->w + (int)floor(y_raw_clamped)];
+            PPMPixel sample_bottom_left = in->data[(int)floor(x_raw_clamped) * in->w + (int)ceil(y_raw_clamped)];
+            PPMPixel sample_bottom_right = in->data[(int)ceil(x_raw_clamped) * in->w + (int)ceil(y_raw_clamped)];
 
             PPMPixel lerp_top = PPMPixel_lerp(sample_top_left, sample_top_right, x_weight);
             PPMPixel lerp_bottom = PPMPixel_lerp(sample_bottom_left, sample_bottom_right, x_weight);
