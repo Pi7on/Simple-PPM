@@ -322,44 +322,42 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight) {
     - https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
 */
 
-// TODO: comment this better.
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out) {
     if (!in) {
-        fprintf(stderr, "PPM_resize_nearest received null image as input.\n");
+        fprintf(stderr, "PPM_resize_bilinear received null image as input.\n");
         exit(1);
     }
     if (!out) {
-        fprintf(stderr, "PPM_resize_nearest received null image as output.\n");
+        fprintf(stderr, "PPM_resize_bilinear received null image as output.\n");
         exit(1);
     }
 
-    // cy: current y position on output image
-    // cx: current x position on output image
-    for (unsigned int cy = 0; cy < out->h; cy++) {
-        const double v = ((double)cy) / ((double)(out->h));  // v: current position on the output's Y axis (in percentage)
-        for (unsigned int cx = 0; cx < out->w; cx++) {
+    for (unsigned int cy = 0; cy < out->h; cy++) {               // cy: current y position on output image
+        const double v = ((double)cy) / ((double)(out->h));      // v: current position on the output's Y axis (in percentage)
+        for (unsigned int cx = 0; cx < out->w; cx++) {           // cx: current x position on output image
             const double u = ((double)cx) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
 
-            double y_raw = (in->h * v) - 0.5;
-            double x_raw = (in->w * u) - 0.5;
+            const double y_double = (in->h * v) - 0.5;  //
+            const double x_double = (in->w * u) - 0.5;  // UV map input coordinates to output coordinates
 
-            const double x_weight = x_raw - floor(x_raw);
-            const double y_weight = y_raw - floor(y_raw);
+            const double y_weight = y_double - floor(y_double);  //
+            const double x_weight = x_double - floor(x_double);  //  interpolation weights
 
-            int y_int = (int)floor(y_raw);
-            int x_int = (int)floor(x_raw);
+            const int y_int = (int)floor(y_double);  //
+            const int x_int = (int)floor(x_double);  // floor UV mapped coordinates to "snap" them to an actual pixel
 
-            PPMPixel sample_top_left = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int, 0, in->w)];
-            PPMPixel sample_top_right = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];
-            PPMPixel sample_bottom_left = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int, 0, in->w)];
-            PPMPixel sample_bottom_right = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];
+            // NOTE: we're clamping x and y so we don't go sampling outside the bounds of the input image.
+            PPMPixel sample_tl = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int, 0, in->w)];                  // top left sample
+            PPMPixel sample_tr = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];          // top right sample
+            PPMPixel sample_bl = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int, 0, in->w)];          // bottom left sample
+            PPMPixel sample_br = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];  // bottom right sample
 
-            PPMPixel lerp_top = PPMPixel_lerp(sample_top_left, sample_top_right, x_weight);
-            PPMPixel lerp_bottom = PPMPixel_lerp(sample_bottom_left, sample_bottom_right, x_weight);
+            PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight);  // interpolation between top left sample and top right sample
+            PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight);  // interpolation between bottom left sample and bottom right sample
 
-            PPMPixel lerp_center = PPMPixel_lerp(lerp_top, lerp_bottom, y_weight);
+            PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight);  // interpolation between results of the two previuos interpolations
 
-            out->data[cy * out->w + cx] = lerp_center;
+            out->data[cy * out->w + cx] = lerp_final;
         }
     }
 }
