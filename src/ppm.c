@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  // for memcpy
 
 int index2Dto1D(int row_index, int col_index, int matrix_width) {
     return (matrix_width * row_index) + col_index;
