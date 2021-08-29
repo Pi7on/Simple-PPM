@@ -1,8 +1,10 @@
 #include "ppm.h"
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>  // for memcpy
 
 int index2Dto1D(int row_index, int col_index, int matrix_width) {
     return (matrix_width * row_index) + col_index;
@@ -94,7 +96,7 @@ PPMImage *PPMImage_read(const char *filename) {
     //open PPM file for reading
     fp = fopen(filename, "rb");
     if (!fp) {
-        fprintf(stderr, "Unable to open file '%s'\n", filename);
+        fprintf(stderr, "%s: Unable to open file '%s'\n", __func__, filename);
         exit(1);
     }
 
@@ -106,14 +108,14 @@ PPMImage *PPMImage_read(const char *filename) {
 
     //check the image format usign magic bytes
     if (buff[0] != PPM_MAGIC[0] || buff[1] != PPM_MAGIC[1]) {
-        fprintf(stderr, "Invalid image format (must be 'P6')\n");
+        fprintf(stderr, "%s: Invalid image format (must be 'P6')\n", __func__);
         exit(1);
     }
 
     //alloc memory form image
     img = (PPMImage *)malloc(sizeof(PPMImage));
     if (!img) {
-        fprintf(stderr, "Unable to allocate memory\n");
+        fprintf(stderr, "%s: Unable to allocate memory\n", __func__);
         exit(1);
     }
 
@@ -129,19 +131,19 @@ PPMImage *PPMImage_read(const char *filename) {
     ungetc(c, fp);
     //read image size information
     if (fscanf(fp, "%d %d", &img->w, &img->h) != 2) {
-        fprintf(stderr, "Invalid image size (error loading '%s')\n", filename);
+        fprintf(stderr, "%s: Invalid image size (error loading '%s')\n", __func__, filename);
         exit(1);
     }
 
     //read rgb component
     if (fscanf(fp, "%d", &rgb_comp_color) != 1) {
-        fprintf(stderr, "Invalid rgb component (error loading '%s')\n", filename);
+        fprintf(stderr, "%s: Invalid rgb component (error loading '%s')\n", __func__, filename);
         exit(1);
     }
 
     //check rgb component depth
     if (rgb_comp_color != MAX_CHANNEL_VALUE) {
-        fprintf(stderr, "'%s' does not have 8-bits components\n", filename);
+        fprintf(stderr, "%s: '%s' does not have 8-bits components\n", __func__, filename);
         exit(1);
     }
 
@@ -153,13 +155,13 @@ PPMImage *PPMImage_read(const char *filename) {
     img->data = (PPMPixel *)malloc(img->w * img->h * sizeof(PPMPixel));
 
     if (!img) {
-        fprintf(stderr, "Unable to allocate memory\n");
+        fprintf(stderr, "%s: Unable to allocate memory\n", __func__);
         exit(1);
     }
 
     //read pixel data from file
     if (fread(img->data, sizeof(PPMPixel), img->w * img->h, fp) != img->w * img->h) {
-        fprintf(stderr, "Error loading image '%s'\n", filename);
+        fprintf(stderr, "%s: Error loading image '%s'\n", __func__, filename);
         exit(1);
     }
 
@@ -168,11 +170,15 @@ PPMImage *PPMImage_read(const char *filename) {
 }
 
 void PPMImage_write(const char *filename, PPMImage *img) {
+    if (!img) {
+        fprintf(stderr, "%s: PPMImage_write received NULL input for '%s'\n", __func__, filename);
+    }
+
     FILE *fp;
 
     fp = fopen(filename, "wb");
     if (!fp) {
-        fprintf(stderr, "Unable to open file '%s'\n", filename);
+        fprintf(stderr, "%s: Unable to open file '%s'\n", __func__, filename);
 
         exit(1);
     }
@@ -191,7 +197,7 @@ void PPMImage_write(const char *filename, PPMImage *img) {
 
     // pixel data
     if (fwrite(img->data, sizeof(PPMPixel), img->w * img->h, fp) != img->w * img->h) {
-        fprintf(stderr, "Something went wrong while writing the data of %s.\n", filename);
+        fprintf(stderr, "%s: Something went wrong while writing the data of %s.\n", __func__, filename);
     }
 
     fclose(fp);
@@ -208,7 +214,6 @@ void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColo
     int err = (dx > dy ? dx : -dy) / 2, e2;
 
     while (1) {
-        //setPixel(x0, y0);
         PPMImage_draw_pixel(image, x0, y0, color);
         if (x0 == x1 && y0 == y1) break;
         e2 = err;
@@ -223,7 +228,7 @@ void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColo
     }
 }
 
-void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, int filled) {
+void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, bool filled) {
     if (filled) {
         for (int i = 0; i < h; i++) {
             PPMImage_draw_line(image, x, y + i, x + w, y + i, color);
@@ -234,6 +239,26 @@ void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor co
         PPMImage_draw_line(image, x + w, y + h, x, y + h, color);
         PPMImage_draw_line(image, x, y + h, x, y, color);
     }
+}
+
+PPMImage *PPMImage_crop(PPMImage *in, unsigned int left, unsigned int top, unsigned int right, unsigned int bottom) {
+    int new_w = in->w - left - right;
+    int new_h = in->h - top - bottom;
+
+    if (new_w <= 0 || new_h <= 0) {
+        fprintf(stderr, "%s: resulting image would have an invalid size.\n", __func__);
+        exit(1);
+    }
+
+    PPMImage *out = PPMImage_create(new_w, new_h, NULL);
+
+    for (unsigned int y = 0; y < out->h; y++) {
+        for (unsigned int x = 0; x < out->w; x++) {
+            out->data[y * out->w + x] = in->data[(y + top) * in->w + (x + left)];
+        }
+    }
+
+    return out;
 }
 
 void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
@@ -283,16 +308,6 @@ PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int
     return out;
 }
 
-double clamp_double(double v, double min, double max) {
-    if (v < min) {
-        return min;
-    }
-    if (v > max) {
-        return max;
-    }
-    return v;
-}
-
 int clamp_int(int v, int min, int max) {
     if (v < min) {
         return min;
@@ -307,11 +322,30 @@ double lerp_double(const double a, const double b, const double weight) {
     return (a * ((double)1.0 - weight) + (b * weight));
 }
 
-PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight) {
+/**
+ * Linearly interpolate two RGB pixels.
+ * 
+ * Parameters:
+ *      a: first pixel
+ *      b: second pixel
+ *      weight: weight used for the interpolation of each channel
+ *      do_round: rounds result for each color channel if enabled.
+ * 
+ * Note: rounding makes the function 4x slower, and doesn't add much, if any, in terms of visual quality.
+ *       Enable only if speed isn't a concern. 
+ */
+PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round) {
     PPMPixel ret;
-    ret.r = (unsigned char)lerp_double(a.r, b.r, weight);
-    ret.g = (unsigned char)lerp_double(a.g, b.g, weight);
-    ret.b = (unsigned char)lerp_double(a.b, b.b, weight);
+    if (do_round) {
+        ret.r = (unsigned char)round(lerp_double(a.r, b.r, weight));
+        ret.g = (unsigned char)round(lerp_double(a.g, b.g, weight));
+        ret.b = (unsigned char)round(lerp_double(a.b, b.b, weight));
+    } else {
+        ret.r = (unsigned char)lerp_double(a.r, b.r, weight);
+        ret.g = (unsigned char)lerp_double(a.g, b.g, weight);
+        ret.b = (unsigned char)lerp_double(a.b, b.b, weight);
+    }
+
     return ret;
 }
 
@@ -322,6 +356,7 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight) {
     - https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
 */
 
+// TODO: fix half-pixel shift in the output (compared to ffmpeg and affinity photo)
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out) {
     if (!in) {
         fprintf(stderr, "PPM_resize_bilinear received null image as input.\n");
@@ -352,10 +387,10 @@ void PPM_resize_bilinear(PPMImage *in, PPMImage *out) {
             PPMPixel sample_bl = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int, 0, in->w)];          // bottom left sample
             PPMPixel sample_br = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];  // bottom right sample
 
-            PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight);  // interpolation between top left sample and top right sample
-            PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight);  // interpolation between bottom left sample and bottom right sample
+            PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight, false);  // interpolation between top left sample and top right sample
+            PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight, false);  // interpolation between bottom left sample and bottom right sample
 
-            PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight);  // interpolation between results of the two previuos interpolations
+            PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight, false);  // interpolation between results of the two previuos interpolations
 
             out->data[cy * out->w + cx] = lerp_final;
         }

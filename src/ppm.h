@@ -1,8 +1,7 @@
 #ifndef SIMPLE_PPM_H
 #define SIMPLE_PPM_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdbool.h>
 
 #define CREATOR "ThePi7on"
 #define MAX_CHANNEL_VALUE 255
@@ -49,15 +48,17 @@ void PPMImage_write(const char *filename, PPMImage *img);
 
 void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color);
 void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color);
-void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, int filled);
+void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, bool filled);
+
+PPMImage *PPMImage_crop(PPMImage *in, unsigned int left, unsigned int top, unsigned int right, unsigned int bottom);
 
 /* go back to returnign a pointer to ppmimage? */
 void PPM_resize_nearest(PPMImage *in, PPMImage *out);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
-double clamp_double(double v, double min, double max);
+int clamp_int(int v, int min, int max);
 double lerp_double(const double a, const double b, const double weight);
-PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight);
+PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round);
 void PPM_resize_bilinear(PPMImage *in, PPMImage *out);
 
 #endif /* SIMPLE_PPM_H */
