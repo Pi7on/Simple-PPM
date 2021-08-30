@@ -348,10 +348,12 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_roun
         ret.r = (unsigned char)round(lerp_double(a.r, b.r, weight));
         ret.g = (unsigned char)round(lerp_double(a.g, b.g, weight));
         ret.b = (unsigned char)round(lerp_double(a.b, b.b, weight));
+        //NOTE: add alpha channel here when implemented
     } else {
         ret.r = (unsigned char)lerp_double(a.r, b.r, weight);
         ret.g = (unsigned char)lerp_double(a.g, b.g, weight);
         ret.b = (unsigned char)lerp_double(a.b, b.b, weight);
+        //NOTE: add alpha channel here when implemented
     }
 
     return ret;
