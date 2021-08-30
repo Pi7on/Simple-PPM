@@ -338,13 +338,12 @@ double lerp_double(const double a, const double b, const double weight) {
  *       Enable only if speed isn't a concern. 
  */
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round) {
-    //TODO: test if this check slows me down
-    // also pls don't bite me in the ass later
-    if (*((unsigned int *)&a) == *((unsigned int *)(&b))) {  // read struct of 3 uchar (PPMPixel) as uint
+    if (a.val == b.val) {
         return a;
     }
+
     PPMPixel ret;
-    //NOTE: can I lerp just a.val and b.val? will a I get same result but faster?
+
     if (do_round) {
         ret.r = (unsigned char)round(lerp_double(a.r, b.r, weight));
         ret.g = (unsigned char)round(lerp_double(a.g, b.g, weight));
