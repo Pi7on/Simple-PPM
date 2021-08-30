@@ -17,23 +17,21 @@
 #define RGB_YELLOW 0xFFFF00
 #define RGB_CYAN 0x00FFFF
 
+// NOTE: internally we work in BGRA, but for now we write and read PPM files only in RGB
 typedef struct {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
+    union {
+        unsigned int val;  // 0x00RRGGBB
+        struct {
+            unsigned char b;
+            unsigned char g;
+            unsigned char r;
+            unsigned char padding;  // alpha, but unused for now
+        };
+    };
 } PPMPixel;
 
-int index2Dto1D(int row_index, int col_index, int matrix_width);
-
-PPMPixel *PPMPixel_create_ref(unsigned char r, unsigned char g, unsigned char b);
-PPMPixel PPMPixel_create_val(unsigned char r, unsigned char g, unsigned char b);
-void PPMPixel_set(PPMPixel *p, unsigned char r, unsigned char g, unsigned char b);
-
-typedef PPMPixel PPMColor;
-PPMColor *PPMColor_create_ref(unsigned int hexcol);
-PPMColor PPMColor_create_val(unsigned int hexcol);
-
-/* TODO: Add support for writing and reading 24 bit images */
+typedef unsigned int PPMColor;
+PPMColor PPMColor_compose(unsigned char r, unsigned char g, unsigned char b);
 
 typedef struct {
     unsigned int w;
@@ -41,7 +39,7 @@ typedef struct {
     PPMPixel *data;
 } PPMImage;
 
-PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMPixel *color);
+PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMColor color);
 void PPMImage_destroy(PPMImage *img);
 PPMImage *PPMImage_read(const char *filename);
 void PPMImage_write(const char *filename, PPMImage *img);
@@ -52,13 +50,20 @@ void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor co
 
 PPMImage *PPMImage_crop(PPMImage *in, unsigned int left, unsigned int top, unsigned int right, unsigned int bottom);
 
+typedef enum {
+    CHANNEL_BY_CHANNEL,
+    WHITE_IF_DIFFERENT
+} diff_mode;
+
+PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode);
+
 /* go back to returnign a pointer to ppmimage? */
 void PPM_resize_nearest(PPMImage *in, PPMImage *out);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
 int clamp_int(int v, int min, int max);
 double lerp_double(const double a, const double b, const double weight);
-PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round);
-void PPM_resize_bilinear(PPMImage *in, PPMImage *out);
+PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool round_flag);
+void PPM_resize_bilinear(PPMImage *in, PPMImage *out, bool round_flag);
 
 #endif /* SIMPLE_PPM_H */

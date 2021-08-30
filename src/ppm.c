@@ -5,75 +5,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int index2Dto1D(int row_index, int col_index, int matrix_width) {
-    return (matrix_width * row_index) + col_index;
-}
-
-PPMPixel *PPMPixel_create_ref(unsigned char r, unsigned char g, unsigned char b) {
-    PPMPixel *ret = malloc(sizeof(PPMPixel));
-    ret->r = r;
-    ret->g = g;
-    ret->b = b;
+PPMColor PPMColor_compose(unsigned char r, unsigned char g, unsigned char b) {
+    PPMColor ret = 0;  //shouldn't C initialize to zero? (bacause if I don't, I get wrong colors)
+    ret = ret | (((unsigned int)b) << (8 * 0));
+    ret = ret | (((unsigned int)g) << (8 * 1));
+    ret = ret | (((unsigned int)r) << (8 * 2));
+    ret = ret | (((unsigned int)0) << (8 * 3));  // most significant byte is unused for now
     return ret;
 }
 
-PPMPixel PPMPixel_create_val(unsigned char r, unsigned char g, unsigned char b) {
-    PPMPixel ret;
-    ret.r = r;
-    ret.g = g;
-    ret.b = b;
-    return ret;
-}
-
-void PPMPixel_set(PPMPixel *p, unsigned char r, unsigned char g, unsigned char b) {
-    p->r = r;
-    p->g = g;
-    p->b = b;
-}
-
-PPMPixel *PPMColor_create_ref(unsigned int hexcol) {
-    // unsigned int --> 32bit --> 4 bytes --> 00000000 RRRRRRRR GGGGGGGG BBBBBBBB
-
-    unsigned char r = (unsigned char)(hexcol >> 16);
-    unsigned char g = (unsigned char)(hexcol >> 8);
-    unsigned char b = (unsigned char)(hexcol);
-
-    PPMPixel *ret = PPMPixel_create_ref(r, g, b);
-    return ret;
-}
-
-PPMPixel PPMColor_create_val(unsigned int hexcol) {
-    // unsigned int --> 32bit --> 4 bytes --> 00000000 RRRRRRRR GGGGGGGG BBBBBBBB
-
-    unsigned char r = (unsigned char)(hexcol >> 16);
-    unsigned char g = (unsigned char)(hexcol >> 8);
-    unsigned char b = (unsigned char)(hexcol);
-
-    PPMPixel ret;
-    ret.r = r;
-    ret.g = g;
-    ret.b = b;
-    return ret;
-}
-
-PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMPixel *color) {
-    PPMImage *ret = malloc(sizeof(PPMImage));
+PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMColor color) {
+    PPMImage *ret = calloc(1, sizeof(PPMImage));
     ret->w = w;
     ret->h = h;
-    ret->data = malloc(w * h * sizeof(PPMPixel));
+    ret->data = calloc(w * h, sizeof(PPMPixel));
 
     if (color) {
         for (int i = 0; i < w * h; i++) {
-            ret->data[i] = *color;
+            ret->data[i].val = color;
         }
     } else {
-        PPMPixel black = PPMPixel_create_val(0x00, 0x00, 0x00);
         for (int i = 0; i < w * h; i++) {
-            ret->data[i] = black;
+            ret->data[i].val = color;
         }
     }
-
-    //ret->data2D = NULL;
     return ret;
 }
 
@@ -112,7 +67,7 @@ PPMImage *PPMImage_read(const char *filename) {
     }
 
     //alloc memory form image
-    img = (PPMImage *)malloc(sizeof(PPMImage));
+    img = (PPMImage *)calloc(1, sizeof(PPMImage));
     if (!img) {
         fprintf(stderr, "%s: Unable to allocate memory\n", __func__);
         exit(1);
@@ -151,19 +106,23 @@ PPMImage *PPMImage_read(const char *filename) {
     }
 
     //memory allocation for pixel data
-    img->data = (PPMPixel *)malloc(img->w * img->h * sizeof(PPMPixel));
+    img->data = (PPMPixel *)calloc(img->w * img->h, sizeof(PPMPixel));
 
     if (!img) {
         fprintf(stderr, "%s: Unable to allocate memory\n", __func__);
         exit(1);
     }
 
-    //read pixel data from file
-    if (fread(img->data, sizeof(PPMPixel), img->w * img->h, fp) != img->w * img->h) {
-        fprintf(stderr, "%s: Error loading image '%s'\n", __func__, filename);
-        exit(1);
-    }
+    //read pixel data
+    for (int i = 0; i < img->w * img->h; i++) {
+        unsigned char rgb[3] = {0};
+        fread(&rgb, (sizeof(rgb)), 1, fp);
 
+        img->data[i].r = rgb[0];
+        img->data[i].g = rgb[1];
+        img->data[i].b = rgb[2];
+    }
+    ///////////////////
     fclose(fp);
     return img;
 }
@@ -191,20 +150,22 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     //image size
     fprintf(fp, "%d %d\n", img->w, img->h);
 
-    // rgb component depth
+    // rgb max value per channel
     fprintf(fp, "%d\n", MAX_CHANNEL_VALUE);
 
     // pixel data
-    if (fwrite(img->data, sizeof(PPMPixel), img->w * img->h, fp) != img->w * img->h) {
-        fprintf(stderr, "%s: Something went wrong while writing the data of %s.\n", __func__, filename);
+    for (int i = 0; i < img->w * img->h; i++) {
+        PPMPixel *bgra = &(img->data[i]);
+
+        unsigned char rgb[3] = {bgra->r, bgra->g, bgra->b};
+        fwrite(&rgb, (sizeof(rgb)), 1, fp);
     }
 
     fclose(fp);
 }
 
 void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color) {
-    int idx = index2Dto1D(px, py, img->w);
-    img->data[idx] = color;
+    img->data[py * img->w + px].val = color;
 }
 
 void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color) {
@@ -249,7 +210,7 @@ PPMImage *PPMImage_crop(PPMImage *in, unsigned int left, unsigned int top, unsig
         exit(1);
     }
 
-    PPMImage *out = PPMImage_create(new_w, new_h, NULL);
+    PPMImage *out = PPMImage_create(new_w, new_h, 0);
 
     for (unsigned int y = 0; y < out->h; y++) {
         for (unsigned int x = 0; x < out->w; x++) {
@@ -258,6 +219,45 @@ PPMImage *PPMImage_crop(PPMImage *in, unsigned int left, unsigned int top, unsig
     }
 
     return out;
+}
+
+PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode) {
+    // both must have the same dimensions
+    if (!a || !b) {
+        fprintf(stderr, "one of the inputs is NULL.\n");
+        exit(1);
+    }
+    if ((a->w != b->w) || (a->h != b->h)) {
+        fprintf(stderr, "images must have the same dimensions.\n");
+        exit(1);
+    }
+
+    PPMImage *diff = PPMImage_create(a->w, a->h, 0);
+    for (int y = 0; y < a->h; y++) {
+        for (int x = 0; x < a->w; x++) {
+            diff->data[y * diff->w + x].r = (unsigned char)abs(a->data[y * a->w + x].r - b->data[y * b->w + x].r);
+            diff->data[y * diff->w + x].g = (unsigned char)abs(a->data[y * a->w + x].g - b->data[y * b->w + x].g);
+            diff->data[y * diff->w + x].b = (unsigned char)abs(a->data[y * a->w + x].b - b->data[y * b->w + x].b);
+
+            switch (mode) {
+                default: {
+                    // fallthrough
+                }
+                case CHANNEL_BY_CHANNEL: {
+                    break;
+                }
+                case WHITE_IF_DIFFERENT: {
+                    if (diff->data[y * diff->w + x].r > 0x00 ||
+                        diff->data[y * diff->w + x].g > 0x00 ||
+                        diff->data[y * diff->w + x].b > 0x00) {
+                        diff->data[y * diff->w + x].val = 0xFFFFFF;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return diff;
 }
 
 void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
@@ -290,7 +290,7 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
 }
 
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h) {
-    PPMImage *out = PPMImage_create(assumed_w, assumed_h, NULL);
+    PPMImage *out = PPMImage_create(assumed_w, assumed_h, 0);
     double half_pixel_offest = 0.5;
     for (unsigned int y_out = 0; y_out < out->h; y_out++) {
         const double v = ((double)y_out) / ((double)(out->h));  // v: current position on the output's Y axis (in percentage)
@@ -318,6 +318,10 @@ int clamp_int(int v, int min, int max) {
 }
 
 double lerp_double(const double a, const double b, const double weight) {
+    //TODO: test if this check slows me down
+    if (a == b) {
+        return a;
+    }
     return (a * ((double)1.0 - weight) + (b * weight));
 }
 
@@ -334,7 +338,13 @@ double lerp_double(const double a, const double b, const double weight) {
  *       Enable only if speed isn't a concern. 
  */
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round) {
+    //TODO: test if this check slows me down
+    // also pls don't bite me in the ass later
+    if (*((unsigned int *)&a) == *((unsigned int *)(&b))) {  // read struct of 3 uchar (PPMPixel) as uint
+        return a;
+    }
     PPMPixel ret;
+    //NOTE: can I lerp just a.val and b.val? will a I get same result but faster?
     if (do_round) {
         ret.r = (unsigned char)round(lerp_double(a.r, b.r, weight));
         ret.g = (unsigned char)round(lerp_double(a.g, b.g, weight));
@@ -356,7 +366,7 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_roun
 */
 
 // TODO: fix half-pixel shift in the output (compared to ffmpeg and affinity photo)
-void PPM_resize_bilinear(PPMImage *in, PPMImage *out) {
+void PPM_resize_bilinear(PPMImage *in, PPMImage *out, bool round_flag) {
     if (!in) {
         fprintf(stderr, "PPM_resize_bilinear received null image as input.\n");
         exit(1);
@@ -371,25 +381,46 @@ void PPM_resize_bilinear(PPMImage *in, PPMImage *out) {
         for (unsigned int cx = 0; cx < out->w; cx++) {           // cx: current x position on output image
             const double u = ((double)cx) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
 
+            // printf("cy: %u, cx: %u\n", cy, cx);
+            //printf("v: %0.15f, u: %0.15f\n", v, u);
+
             const double y_double = (in->h * v) - 0.5;  //
-            const double x_double = (in->w * u) - 0.5;  // UV map input coordinates to output coordinates
+            const double x_double = (in->w * u) - 0.5;  // UV map input coordinates to output coordinates (both go from 0 to 1)
+
+            //printf("y_double: %f, x_double: %f\n", y_double, x_double);
 
             const double y_weight = y_double - floor(y_double);  //
             const double x_weight = x_double - floor(x_double);  //  interpolation weights
 
+            //printf("y_weight: %f, x_weight: %f\n", y_weight, x_weight);
+
             const int y_int = (int)floor(y_double);  //
-            const int x_int = (int)floor(x_double);  // floor UV mapped coordinates to "snap" them to an actual pixel
+            const int x_int = (int)floor(x_double);  // floor output's UV mapped coordinates to "snap" them to an actual pixel of the input image
+
+            //printf("y_int: %d, x_int: %d\n", y_int, x_int);
 
             // NOTE: we're clamping x and y so we don't go sampling outside the bounds of the input image.
+            // NOTE2: TGA lerpa per colonne, mentre qui lerpo per righe. prova a cambiare.
+            // NOTA3: differenze se tolgo quel -1 a in TUTTI i calmp?
             PPMPixel sample_tl = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int, 0, in->w)];                  // top left sample
             PPMPixel sample_tr = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];          // top right sample
             PPMPixel sample_bl = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int, 0, in->w)];          // bottom left sample
             PPMPixel sample_br = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];  // bottom right sample
 
-            PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight, false);  // interpolation between top left sample and top right sample
-            PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight, false);  // interpolation between bottom left sample and bottom right sample
+            //printf("samp_tl - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int, 0, in->h), clamp_int(x_int, 0, in->w), sample_tl.r, sample_tl.g, sample_tl.b);
+            //printf("samp_tr - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int, 0, in->h), clamp_int(x_int + 1, 0, in->w - 1), sample_tr.r, sample_tr.g, sample_tr.b);
+            //printf("samp_bl - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int + 1, 0, in->h - 1), clamp_int(x_int, 0, in->w), sample_bl.r, sample_bl.g, sample_bl.b);
+            //printf("samp_br - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int + 1, 0, in->h - 1), clamp_int(x_int + 1, 0, in->w - 1), sample_br.r, sample_br.g, sample_br.b);
 
-            PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight, false);  // interpolation between results of the two previuos interpolations
+            PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight, round_flag);  // interpolation between top left sample and top right sample
+            PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight, round_flag);  // interpolation between bottom left sample and bottom right sample
+
+            //printf("lerp_t - val: [%u %d %u]\n", lerp_t.r, lerp_t.g, lerp_t.b);
+            //printf("lerp_b - val: [%u %d %u]\n", lerp_b.r, lerp_b.g, lerp_b.b);
+
+            PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight, round_flag);  // interpolation between results of the two previuos interpolations
+
+            //printf("lerp_fin - val: [%u %d %u]\n\n", lerp_final.r, lerp_final.g, lerp_final.b);
 
             out->data[cy * out->w + cx] = lerp_final;
         }
