@@ -279,7 +279,8 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
             const float u = ((float)x_out) / ((float)(out->w));  // u: current position on the output's X axis (in percentage)
 
             // "nearest" should round
-            // "integer" should floor.
+            // "integer" should floor (or cast to int).
+            // So technically, this isn't actually Nearest Neighbour?
 
             const int x_in = (int)(in->w * u);
             const int y_in = (int)(in->h * v);
@@ -325,18 +326,6 @@ double lerp_double(const double a, const double b, const double weight) {
     return (a * ((double)1.0 - weight) + (b * weight));
 }
 
-/**
- * Linearly interpolate two RGB pixels.
- * 
- * Parameters:
- *      a: first pixel
- *      b: second pixel
- *      weight: weight used for the interpolation of each channel
- *      do_round: rounds result for each color channel if enabled.
- * 
- * Note: rounding makes the function 4x slower, and doesn't add much, if any, in terms of visual quality.
- *       Enable only if speed isn't a concern. 
- */
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round) {
     if (a.val == b.val) {
         return a;

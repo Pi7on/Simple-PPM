@@ -1,5 +1,5 @@
-bin/*
-data/*
+bin
+data
 
 show.bat
 notes.txt
