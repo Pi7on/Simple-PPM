@@ -164,8 +164,16 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fclose(fp);
 }
 
-void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color) {
+void PPMImage_draw_color(PPMImage *img, int px, int py, PPMColor color) {
     img->data[py * img->w + px].val = color;
+}
+
+void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMPixel pix) {
+    img->data[py * img->w + px] = pix;
+}
+
+PPMPixel PPMImage_get_pixel(PPMImage *in, unsigned int x, unsigned int y) {
+    return in->data[y * in->w + x];
 }
 
 void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color) {
@@ -174,7 +182,7 @@ void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColo
     int err = (dx > dy ? dx : -dy) / 2, e2;
 
     while (1) {
-        PPMImage_draw_pixel(image, x0, y0, color);
+        PPMImage_draw_color(image, x0, y0, color);
         if (x0 == x1 && y0 == y1) break;
         e2 = err;
         if (e2 > -dx) {

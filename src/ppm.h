@@ -56,7 +56,9 @@ void PPMImage_write(const char *filename, PPMImage *img);
  * @param[in] py: Y coordinate.
  * @param[in] color: Pixel color.
  */
-void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMColor color);
+void PPMImage_draw_color(PPMImage *image, int px, int py, PPMColor color);
+void PPMImage_draw_pixel(PPMImage *img, int px, int py, PPMPixel pix);
+PPMPixel PPMImage_get_pixel(PPMImage *image, unsigned int x, unsigned int y);
 void PPMImage_draw_line(PPMImage *image, int x0, int y0, int x1, int y1, PPMColor color);
 void PPMImage_draw_rect(PPMImage *image, int x, int y, int w, int h, PPMColor color, bool filled);
 
