@@ -69,8 +69,7 @@ typedef enum {
 
 PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode);
 
-/* go back to returnign a pointer to ppmimage? */
-void PPM_resize_nearest(PPMImage *in, PPMImage *out);
+PPMImage *PPM_resize_nearest(PPMImage *in, unsigned int w, unsigned int h);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
 int clamp_int(int v, int min, int max);
@@ -82,17 +81,20 @@ double lerp_double(const double a, const double b, const double weight);
  * @param[in] a: First pixel.
  * @param[in] b: Second pixel.
  * @param[in] weight: Weight used for the interpolation of each channel.
- * @param[in] round_flag: If set, rounds result for each color channel if enabled. Note that rounding makes the function 4x slower, and doesn't add much, if any, in terms of visual quality. Enable only if speed isn't a concern.  
+ * @param[in] round_flag: If set, rounds result for each color channel.  
  */
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool round_flag);
 
+// Resources:
+// - https://stackoverflow.com/questions/11991701/image-interpolation-bicubic-or-bilinear-what-if-there-are-no-neighbor-pixels
+// - https://tinaja.com/glib/pixintpl.pdf
+// - https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
 /**
- * Resize image using bilinear interpolation (aka triangle/tent filter).
- * 
  * @param[in] in: Input image.
- * @param[out] out: Output image.
- * @param[in] round_flag: If set, rounds result for each color channel if enabled. Note that rounding makes the function 4x slower, and doesn't add much, if any, in terms of visual quality. Enable only if speed isn't a concern.
- */
-void PPM_resize_bilinear(PPMImage *in, PPMImage *out, bool round_flag);
+ * @param[in] w: Target width.
+ * @param[in] h: Target height.
+ * @param[in] round_flag: Gets passed to PPMPixel_lerp(). If set applies rounding to interpolation results.
+*/
+PPMImage *PPM_resize_bilinear(PPMImage *in, unsigned int w, unsigned int h, bool round_flag);
 
 #endif /* SIMPLE_PPM_H */

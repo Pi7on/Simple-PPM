@@ -260,15 +260,13 @@ PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode) {
     return diff;
 }
 
-void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
+PPMImage *PPM_resize_nearest(PPMImage *in, unsigned int w, unsigned int h) {
     if (!in) {
         fprintf(stderr, "PPM_resize_nearest received null image as input.\n");
         exit(1);
     }
-    if (!out) {
-        fprintf(stderr, "PPM_resize_nearest received null image as output.\n");
-        exit(1);
-    }
+
+    PPMImage *out = PPMImage_create(w, h, 0);
     //TODO: add 0.5 pixel in upscalig?
     // ffmpeg does it: https://github.com/FFmpeg/FFmpeg/blob/bc70684e74a185d7b80c8b80bdedda659cb581b8/libavfilter/transform.c
 
@@ -288,6 +286,7 @@ void PPM_resize_nearest(PPMImage *in, PPMImage *out) {
             out->data[y_out * out->w + x_out] = in->data[y_in * in->w + x_in];
         }
     }
+    return out;
 }
 
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h) {
@@ -323,7 +322,7 @@ double lerp_double(const double a, const double b, const double weight) {
     if (a == b) {
         return a;
     }
-    return (a * ((double)1.0 - weight) + (b * weight));
+    return ((a * (1.0 - weight)) + (b * weight));
 }
 
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round) {
@@ -348,71 +347,74 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_roun
     return ret;
 }
 
-/*
- Resources:
-    - https://stackoverflow.com/questions/11991701/image-interpolation-bicubic-or-bilinear-what-if-there-are-no-neighbor-pixels
-    - https://tinaja.com/glib/pixintpl.pdf
-    - https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
-*/
-
-// TODO: fix half-pixel shift in the output (compared to ffmpeg and affinity photo)
-void PPM_resize_bilinear(PPMImage *in, PPMImage *out, bool round_flag) {
+PPMImage *PPM_resize_bilinear(PPMImage *in, unsigned int w, unsigned int h, bool round_flag) {
     if (!in) {
         fprintf(stderr, "PPM_resize_bilinear received null image as input.\n");
         exit(1);
     }
-    if (!out) {
-        fprintf(stderr, "PPM_resize_bilinear received null image as output.\n");
-        exit(1);
-    }
+    PPMImage *out = PPMImage_create(w, h, 0);
 
+    // FIRST PASS
     for (unsigned int cy = 0; cy < out->h; cy++) {               // cy: current y position on output image
         const double v = ((double)cy) / ((double)(out->h));      // v: current position on the output's Y axis (in percentage)
         for (unsigned int cx = 0; cx < out->w; cx++) {           // cx: current x position on output image
             const double u = ((double)cx) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
 
-            // printf("cy: %u, cx: %u\n", cy, cx);
-            //printf("v: %0.15f, u: %0.15f\n", v, u);
-
             const double y_double = (in->h * v) - 0.5;  //
             const double x_double = (in->w * u) - 0.5;  // UV map input coordinates to output coordinates (both go from 0 to 1)
-
-            //printf("y_double: %f, x_double: %f\n", y_double, x_double);
 
             const double y_weight = y_double - floor(y_double);  //
             const double x_weight = x_double - floor(x_double);  //  interpolation weights
 
-            //printf("y_weight: %f, x_weight: %f\n", y_weight, x_weight);
-
             const int y_int = (int)floor(y_double);  //
             const int x_int = (int)floor(x_double);  // floor output's UV mapped coordinates to "snap" them to an actual pixel of the input image
 
-            //printf("y_int: %d, x_int: %d\n", y_int, x_int);
-
             // NOTE: we're clamping x and y so we don't go sampling outside the bounds of the input image.
-            // NOTE2: TGA lerpa per colonne, mentre qui lerpo per righe. prova a cambiare.
-            // NOTA3: differenze se tolgo quel -1 a in TUTTI i calmp?
             PPMPixel sample_tl = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int, 0, in->w)];                  // top left sample
             PPMPixel sample_tr = in->data[clamp_int(y_int, 0, in->h) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];          // top right sample
             PPMPixel sample_bl = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int, 0, in->w)];          // bottom left sample
             PPMPixel sample_br = in->data[clamp_int(y_int + 1, 0, in->h - 1) * in->w + clamp_int(x_int + 1, 0, in->w - 1)];  // bottom right sample
 
-            //printf("samp_tl - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int, 0, in->h), clamp_int(x_int, 0, in->w), sample_tl.r, sample_tl.g, sample_tl.b);
-            //printf("samp_tr - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int, 0, in->h), clamp_int(x_int + 1, 0, in->w - 1), sample_tr.r, sample_tr.g, sample_tr.b);
-            //printf("samp_bl - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int + 1, 0, in->h - 1), clamp_int(x_int, 0, in->w), sample_bl.r, sample_bl.g, sample_bl.b);
-            //printf("samp_br - pos: [y: %d x: %d], val: [%u %d %u]\n", clamp_int(y_int + 1, 0, in->h - 1), clamp_int(x_int + 1, 0, in->w - 1), sample_br.r, sample_br.g, sample_br.b);
-
             PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight, round_flag);  // interpolation between top left sample and top right sample
             PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight, round_flag);  // interpolation between bottom left sample and bottom right sample
 
-            //printf("lerp_t - val: [%u %d %u]\n", lerp_t.r, lerp_t.g, lerp_t.b);
-            //printf("lerp_b - val: [%u %d %u]\n", lerp_b.r, lerp_b.g, lerp_b.b);
-
             PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight, round_flag);  // interpolation between results of the two previuos interpolations
-
-            //printf("lerp_fin - val: [%u %d %u]\n\n", lerp_final.r, lerp_final.g, lerp_final.b);
 
             out->data[cy * out->w + cx] = lerp_final;
         }
     }
+
+    // SECOND PASS
+    // same procedure, but use previous state of the output as input.
+    // This second pass doesn't change the size, it just fixes the half-pixel shift caused by the first pass.
+    // TODO: find out if there's a better way than this one.
+    for (unsigned int cy = 0; cy < out->h; cy++) {
+        const double v = ((double)cy) / ((double)(out->h));
+        for (unsigned int cx = 0; cx < out->w; cx++) {
+            const double u = ((double)cx) / ((double)(out->w));
+
+            const double y_double = (out->h * v) + 0.5;
+            const double x_double = (out->w * u) + 0.5;
+
+            const double y_weight = y_double - floor(y_double);
+            const double x_weight = x_double - floor(x_double);
+
+            const int y_int = (int)floor(y_double);
+            const int x_int = (int)floor(x_double);
+
+            PPMPixel sample_tl = out->data[clamp_int(y_int, 0, out->h) * out->w + clamp_int(x_int, 0, out->w)];
+            PPMPixel sample_tr = out->data[clamp_int(y_int, 0, out->h) * out->w + clamp_int(x_int + 1, 0, out->w - 1)];
+            PPMPixel sample_bl = out->data[clamp_int(y_int + 1, 0, out->h - 1) * out->w + clamp_int(x_int, 0, out->w)];
+            PPMPixel sample_br = out->data[clamp_int(y_int + 1, 0, out->h - 1) * out->w + clamp_int(x_int + 1, 0, out->w - 1)];
+
+            PPMPixel lerp_t = PPMPixel_lerp(sample_tl, sample_tr, x_weight, round_flag);
+            PPMPixel lerp_b = PPMPixel_lerp(sample_bl, sample_br, x_weight, round_flag);
+
+            PPMPixel lerp_final = PPMPixel_lerp(lerp_t, lerp_b, y_weight, round_flag);
+
+            out->data[cy * out->w + cx] = lerp_final;
+        }
+    }
+
+    return out;
 }
