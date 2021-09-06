@@ -315,6 +315,16 @@ PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int
     return out;
 }
 
+float clamp_float(float v, float min, float max) {
+    if (v < min) {
+        return min;
+    }
+    if (v > max) {
+        return max;
+    }
+    return v;
+}
+
 int clamp_int(int v, int min, int max) {
     if (v < min) {
         return min;

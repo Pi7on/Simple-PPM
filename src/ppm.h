@@ -74,6 +74,7 @@ PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode);
 PPMImage *PPM_resize_nearest(PPMImage *in, unsigned int w, unsigned int h);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
+float clamp_float(float v, float min, float max);
 int clamp_int(int v, int min, int max);
 double lerp_double(const double a, const double b, const double weight);
 
