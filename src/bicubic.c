@@ -93,29 +93,6 @@ void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
     }
 }
 
-void resize_image(PPMImage *source_image, PPMImage *destination_image, float scale) {
-    uint8_t sample[3];
-
-    destination_image->w = (unsigned int)((float)(source_image->w) * scale);
-    destination_image->h = (unsigned int)((float)(source_image->h) * scale);
-
-    //printf("x-width=%d | y-width=%d\n", destination_image->w, destination_image->h);
-
-    for (int y = 0; y < destination_image->h; y++) {
-        float v = (float)y / (float)(destination_image->h);
-        for (int x = 0; x < destination_image->w; x++) {
-            float u = (float)x / (float)(destination_image->w);
-
-            //printf("v: %f - u: %f\n", v, u);
-            sample_bicubic(source_image, u, v, sample);
-
-            destination_image->data[x + ((destination_image->w) * y)].r = sample[0];
-            destination_image->data[x + ((destination_image->w) * y)].g = sample[1];
-            destination_image->data[x + ((destination_image->w) * y)].b = sample[2];
-        }
-    }
-}
-
 void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float scale) {
     uint8_t sample[3];
 
