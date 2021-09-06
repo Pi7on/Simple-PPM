@@ -1,3 +1,5 @@
+.vscode
+
 bin
 data
 
@@ -5,3 +7,4 @@ show.bat
 notes.txt
 
 main.c
+main.2c
