@@ -18,6 +18,7 @@
 #define RGB_CYAN 0x00FFFF
 
 // NOTE: internally we work in BGRA, but for now we write and read PPM files only in RGB
+#pragma warning(disable : 4201)  //unnamed union inside the PPMPixel struct
 typedef struct {
     union {
         unsigned int val;  // 0x00RRGGBB
@@ -74,30 +75,6 @@ PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode);
 PPMImage *PPM_resize_nearest(PPMImage *in, unsigned int w, unsigned int h);
 PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int assumed_h);
 
-float clamp_float(float v, float min, float max);
-int clamp_int(int v, int min, int max);
 double lerp_double(const double a, const double b, const double weight);
-
-/**
- * Linearly interpolate two RGB pixels, channel by channel.
- *
- * @param[in] a: First pixel.
- * @param[in] b: Second pixel.
- * @param[in] weight: Weight used for the interpolation of each channel.
- * @param[in] round_flag: If set, rounds result for each color channel.  
- */
-PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool round_flag);
-
-// Resources:
-// - https://stackoverflow.com/questions/11991701/image-interpolation-bicubic-or-bilinear-what-if-there-are-no-neighbor-pixels
-// - https://tinaja.com/glib/pixintpl.pdf
-// - https://www.reddit.com/r/programming/comments/10c4w8/pure_javascript_html5_canvas_bilinear_image/c6ccwwn?utm_source=share&utm_medium=web2x&context=3
-/**
- * @param[in] in: Input image.
- * @param[in] w: Target width.
- * @param[in] h: Target height.
- * @param[in] round_flag: Gets passed to PPMPixel_lerp(). If set applies rounding to interpolation results.
-*/
-PPMImage *PPM_resize_bilinear(PPMImage *in, unsigned int w, unsigned int h, bool round_flag);
 
 #endif /* SIMPLE_PPM_H */

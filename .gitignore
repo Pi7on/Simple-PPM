@@ -5,6 +5,7 @@ data
 
 show.bat
 notes.txt
+cl_manual.txt
 
 main.c
-main.2c
+demo.c

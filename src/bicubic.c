@@ -1,7 +1,6 @@
-
-
 #include "bicubic.h"
 
+#include "helpers.h"
 #include "ppm.h"
 
 float cubic_hermite(float A, float B, float C, float D, float t) {
@@ -16,10 +15,10 @@ float cubic_hermite(float A, float B, float C, float D, float t) {
 }
 
 void get_pixel_clamped(PPMImage *source_image, int x, int y, uint8_t *temp_pixel) {
-    int cx = clamp_int(x, 0, source_image->w - 1);
-    int cy = clamp_int(y, 0, source_image->h - 1);
-
-    // printf("cy: %d - cx: %d\n", cy, cx);
+    // TODO: is this cast always safe?
+    //                        V
+    int cx = CLAMP(x, 0, (signed int)source_image->w - 1);
+    int cy = CLAMP(y, 0, (signed int)source_image->h - 1);
 
     temp_pixel[0] = source_image->data[cx + (source_image->w * cy)].chan.r;
     temp_pixel[1] = source_image->data[cx + (source_image->w * cy)].chan.g;
@@ -89,7 +88,7 @@ void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
         // perform interpolation on the 4 values obtained from previous step
         float value = cubic_hermite(col0, col1, col2, col3, yfract);
 
-        value = clamp_float(value, 0.0f, 255.0f);
+        value = CLAMP(value, 0.0f, 255.0f);
 
         sample[i] = (uint8_t)value;
     }
