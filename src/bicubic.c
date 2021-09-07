@@ -1,3 +1,5 @@
+
+
 #include "bicubic.h"
 
 #include "ppm.h"
@@ -19,9 +21,9 @@ void get_pixel_clamped(PPMImage *source_image, int x, int y, uint8_t *temp_pixel
 
     // printf("cy: %d - cx: %d\n", cy, cx);
 
-    temp_pixel[0] = source_image->data[cx + (source_image->w * cy)].r;
-    temp_pixel[1] = source_image->data[cx + (source_image->w * cy)].g;
-    temp_pixel[2] = source_image->data[cx + (source_image->w * cy)].b;
+    temp_pixel[0] = source_image->data[cx + (source_image->w * cy)].chan.r;
+    temp_pixel[1] = source_image->data[cx + (source_image->w * cy)].chan.g;
+    temp_pixel[2] = source_image->data[cx + (source_image->w * cy)].chan.b;
 }
 
 void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
@@ -99,16 +101,16 @@ void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float s
     destination_image->w = (unsigned int)((float)(source_image->w) * scale);
     destination_image->h = (unsigned int)((float)(source_image->h) * scale);
 
-    for (int y = 0; y < destination_image->h; y++) {
+    for (unsigned int y = 0; y < destination_image->h; y++) {
         float v = (float)y / (float)(destination_image->h);
-        for (int x = 0; x < destination_image->w; x++) {
+        for (unsigned int x = 0; x < destination_image->w; x++) {
             float u = (float)x / (float)(destination_image->w);
 
             sample_bicubic(source_image, u, v, sample);
 
-            destination_image->data[x + ((destination_image->w) * y)].r = sample[0];
-            destination_image->data[x + ((destination_image->w) * y)].g = sample[1];
-            destination_image->data[x + ((destination_image->w) * y)].b = sample[2];
+            destination_image->data[x + ((destination_image->w) * y)].chan.r = sample[0];
+            destination_image->data[x + ((destination_image->w) * y)].chan.g = sample[1];
+            destination_image->data[x + ((destination_image->w) * y)].chan.b = sample[2];
         }
     }
 }

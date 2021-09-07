@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "ppm.h"
 
 #include <math.h>
@@ -21,11 +23,11 @@ PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMColor color) {
     ret->data = calloc(w * h, sizeof(PPMPixel));
 
     if (color) {
-        for (int i = 0; i < w * h; i++) {
+        for (unsigned int i = 0; i < w * h; i++) {
             ret->data[i].val = color;
         }
     } else {
-        for (int i = 0; i < w * h; i++) {
+        for (unsigned int i = 0; i < w * h; i++) {
             ret->data[i].val = color;
         }
     }
@@ -40,7 +42,7 @@ void PPMImage_destroy(PPMImage *img) {
 }
 
 PPMImage *PPMImage_read(const char *filename) {
-    const char PPM_MAGIC[2] = "P6";
+    const char PPM_MAGIC[3] = "P6";
     char buff[16];
     PPMImage *img;
     FILE *fp;
@@ -48,6 +50,7 @@ PPMImage *PPMImage_read(const char *filename) {
     int rgb_comp_color;
 
     //open PPM file for reading
+
     fp = fopen(filename, "rb");
     if (!fp) {
         fprintf(stderr, "%s: Unable to open file '%s'\n", __func__, filename);
@@ -114,13 +117,13 @@ PPMImage *PPMImage_read(const char *filename) {
     }
 
     //read pixel data
-    for (int i = 0; i < img->w * img->h; i++) {
+    for (unsigned int i = 0; i < img->w * img->h; i++) {
         unsigned char rgb[3] = {0};
         fread(&rgb, (sizeof(rgb)), 1, fp);
 
-        img->data[i].r = rgb[0];
-        img->data[i].g = rgb[1];
-        img->data[i].b = rgb[2];
+        img->data[i].chan.r = rgb[0];
+        img->data[i].chan.g = rgb[1];
+        img->data[i].chan.b = rgb[2];
     }
     ///////////////////
     fclose(fp);
@@ -154,10 +157,14 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fprintf(fp, "%d\n", MAX_CHANNEL_VALUE);
 
     // pixel data
-    for (int i = 0; i < img->w * img->h; i++) {
+    for (unsigned int i = 0; i < img->w * img->h; i++) {
         PPMPixel *bgra = &(img->data[i]);
 
-        unsigned char rgb[3] = {bgra->r, bgra->g, bgra->b};
+        unsigned char rgb[3];
+        rgb[0] = bgra->chan.r;
+        rgb[1] = bgra->chan.g;
+        rgb[2] = bgra->chan.b;
+
         fwrite(&rgb, (sizeof(rgb)), 1, fp);
     }
 
@@ -241,11 +248,11 @@ PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode) {
     }
 
     PPMImage *diff = PPMImage_create(a->w, a->h, 0);
-    for (int y = 0; y < a->h; y++) {
-        for (int x = 0; x < a->w; x++) {
-            diff->data[y * diff->w + x].r = (unsigned char)abs(a->data[y * a->w + x].r - b->data[y * b->w + x].r);
-            diff->data[y * diff->w + x].g = (unsigned char)abs(a->data[y * a->w + x].g - b->data[y * b->w + x].g);
-            diff->data[y * diff->w + x].b = (unsigned char)abs(a->data[y * a->w + x].b - b->data[y * b->w + x].b);
+    for (unsigned int y = 0; y < a->h; y++) {
+        for (unsigned int x = 0; x < a->w; x++) {
+            diff->data[y * diff->w + x].chan.r = (unsigned char)abs(a->data[y * a->w + x].chan.r - b->data[y * b->w + x].chan.r);
+            diff->data[y * diff->w + x].chan.g = (unsigned char)abs(a->data[y * a->w + x].chan.g - b->data[y * b->w + x].chan.g);
+            diff->data[y * diff->w + x].chan.b = (unsigned char)abs(a->data[y * a->w + x].chan.b - b->data[y * b->w + x].chan.b);
 
             switch (mode) {
                 default: {
@@ -255,9 +262,9 @@ PPMImage *PPMImage_diff(PPMImage *a, PPMImage *b, diff_mode mode) {
                     break;
                 }
                 case WHITE_IF_DIFFERENT: {
-                    if (diff->data[y * diff->w + x].r > 0x00 ||
-                        diff->data[y * diff->w + x].g > 0x00 ||
-                        diff->data[y * diff->w + x].b > 0x00) {
+                    if (diff->data[y * diff->w + x].chan.r > 0x00 ||
+                        diff->data[y * diff->w + x].chan.g > 0x00 ||
+                        diff->data[y * diff->w + x].chan.b > 0x00) {
                         diff->data[y * diff->w + x].val = 0xFFFFFF;
                     }
                     break;
@@ -306,8 +313,8 @@ PPMImage *PPM_descale_nearest(PPMImage *in, unsigned int assumed_w, unsigned int
             const double u = ((double)x_out) / ((double)(out->w));  // u: current position on the output's X axis (in percentage)
 
             /* TODO: add explanation for why we need this half-pixel offset */
-            const int x_in = round(in->w * u + half_pixel_offest);
-            const int y_in = round(in->h * v + half_pixel_offest);
+            const int x_in = (int)round(in->w * u + half_pixel_offest);
+            const int y_in = (int)round(in->h * v + half_pixel_offest);
 
             out->data[y_out * out->w + x_out] = in->data[y_in * in->w + x_in];
         }
@@ -351,14 +358,14 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_roun
     PPMPixel ret;
 
     if (do_round) {
-        ret.r = (unsigned char)round(lerp_double(a.r, b.r, weight));
-        ret.g = (unsigned char)round(lerp_double(a.g, b.g, weight));
-        ret.b = (unsigned char)round(lerp_double(a.b, b.b, weight));
+        ret.chan.r = (unsigned char)round(lerp_double(a.chan.r, b.chan.r, weight));
+        ret.chan.g = (unsigned char)round(lerp_double(a.chan.g, b.chan.g, weight));
+        ret.chan.b = (unsigned char)round(lerp_double(a.chan.b, b.chan.b, weight));
         //NOTE: add alpha channel here when implemented
     } else {
-        ret.r = (unsigned char)lerp_double(a.r, b.r, weight);
-        ret.g = (unsigned char)lerp_double(a.g, b.g, weight);
-        ret.b = (unsigned char)lerp_double(a.b, b.b, weight);
+        ret.chan.r = (unsigned char)lerp_double(a.chan.r, b.chan.r, weight);
+        ret.chan.g = (unsigned char)lerp_double(a.chan.g, b.chan.g, weight);
+        ret.chan.b = (unsigned char)lerp_double(a.chan.b, b.chan.b, weight);
         //NOTE: add alpha channel here when implemented
     }
 

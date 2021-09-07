@@ -26,7 +26,7 @@ typedef struct {
             unsigned char g;
             unsigned char r;
             unsigned char padding;  // alpha, but unused for now
-        };
+        } chan;
     };
 } PPMPixel;
 
