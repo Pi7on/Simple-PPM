@@ -98,7 +98,6 @@ void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
     }
 }
 
-// TODO: when at the edges, don't sample black, but make sure to clone nearest edge
 void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float scale) {
     uint8_t sample[3];
 
