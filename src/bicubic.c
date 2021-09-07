@@ -1,7 +1,7 @@
+
 #include "bicubic.h"
 
 #include "helpers.h"
-#include "ppm.h"
 
 float cubic_hermite(float A, float B, float C, float D, float t) {
     float a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;

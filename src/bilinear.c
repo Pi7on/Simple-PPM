@@ -6,14 +6,6 @@
 
 #include "helpers.h"
 
-double lerp_double(const double a, const double b, const double weight) {
-    //TODO: test if this check slows me down
-    if (a == b) {
-        return a;
-    }
-    return ((a * (1.0 - weight)) + (b * weight));
-}
-
 PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_round) {
     if (a.val == b.val) {
         return a;
