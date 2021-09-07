@@ -14,14 +14,14 @@ PPMPixel PPMPixel_lerp(PPMPixel a, PPMPixel b, const double weight, bool do_roun
     PPMPixel ret;
 
     if (do_round) {
-        ret.chan.r = (unsigned char)round(lerp_double(a.chan.r, b.chan.r, weight));
-        ret.chan.g = (unsigned char)round(lerp_double(a.chan.g, b.chan.g, weight));
-        ret.chan.b = (unsigned char)round(lerp_double(a.chan.b, b.chan.b, weight));
+        ret.chan.r = (unsigned char)round(LERP(a.chan.r, b.chan.r, weight));
+        ret.chan.g = (unsigned char)round(LERP(a.chan.g, b.chan.g, weight));
+        ret.chan.b = (unsigned char)round(LERP(a.chan.b, b.chan.b, weight));
         //NOTE: add alpha channel here when implemented
     } else {
-        ret.chan.r = (unsigned char)lerp_double(a.chan.r, b.chan.r, weight);
-        ret.chan.g = (unsigned char)lerp_double(a.chan.g, b.chan.g, weight);
-        ret.chan.b = (unsigned char)lerp_double(a.chan.b, b.chan.b, weight);
+        ret.chan.r = (unsigned char)LERP(a.chan.r, b.chan.r, weight);
+        ret.chan.g = (unsigned char)LERP(a.chan.g, b.chan.g, weight);
+        ret.chan.b = (unsigned char)LERP(a.chan.b, b.chan.b, weight);
         //NOTE: add alpha channel here when implemented
     }
 
