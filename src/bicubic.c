@@ -1,6 +1,8 @@
 
 #include "bicubic.h"
 
+#include <stdio.h>
+
 #include "helpers.h"
 
 float cubic_hermite(float A, float B, float C, float D, float t) {
@@ -27,11 +29,11 @@ void get_pixel_clamped(PPMImage *source_image, int x, int y, uint8_t *temp_pixel
 
 void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
     float x = (u * source_image->w) - 0.5f;
-    int xint = (int)x;
+    int xint = (int)floor(x);
     float xfract = x - xint;
 
     float y = (v * source_image->h) - 0.5f;
-    int yint = (int)y;
+    int yint = (int)floor(y);
     float yfract = y - yint;
 
     uint8_t p00[3];
@@ -53,6 +55,8 @@ void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
     uint8_t p13[3];
     uint8_t p23[3];
     uint8_t p33[3];
+
+    //printf("y: %f - x: %f --- yint: %d - xint:%d\n", y, x, yint, xint);
 
     // 1st row
     get_pixel_clamped(source_image, xint - 1, yint - 1, p00);
@@ -94,6 +98,7 @@ void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
     }
 }
 
+// TODO: when at the edges, don't sample black, but make sure to clone nearest edge
 void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float scale) {
     uint8_t sample[3];
 
