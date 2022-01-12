@@ -4,16 +4,52 @@
 #include <stdio.h>
 
 #include "helpers.h"
+/*
 
+// rivece un peso, lo prametrizza in base a B e C, e lo ritorna.
+float MitchellNetravali(float t, float B, float C) {
+    float at = ABS(t);
+    if (at < 1.0f) {
+        return ((12 - 9 * B - 6 * C) * at * at * at +
+                (-18 + 12 * B + 6 * C) * at * at +
+                (6 - 2 * B)) /
+               6;
+
+    } else if ((at >= 1) && (at < 2)) {
+        return ((-B - 6 * C) * at * at * at +
+                (6 * B + 30 * C) * at * at + (-12 * B - 48 * C) * at + (8 * B + 24 * C)) /
+               6;
+    } else {
+        return 0;
+    }
+}
+
+// hermite: b=0 c=0
+// https://legacy.imagemagick.org/Usage/img_diagrams/cubic_survey.gif
 float cubic_hermite(float A, float B, float C, float D, float t) {
     float a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;
     float b = A - (5.0f * B) / 2.0f + 2.0f * C - D / 2.0f;
     float c = -A / 2.0f + C / 2.0f;
     float d = B;
 
-    return (a * t * t * t +
-            b * t * t +
-            c * t + d);
+    return (a * CUBE(t) +
+            b * SQUARE(t) +
+            c * t +
+            d);
+}
+
+float cubic_BC(float A, float B, float C, float D, float t) {
+    float a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;
+    float b = A - (5.0f * B) / 2.0f + 2.0f * C - D / 2.0f;
+    float c = -A / 2.0f + C / 2.0f;
+    float d = B;
+
+    t = MitchellNetravali(t, 0, 0);
+
+    return (a * CUBE(t) +
+            b * SQUARE(t) +
+            c * t +
+            d);
 }
 
 void get_pixel_clamped(PPMImage *source_image, int x, int y, uint8_t *temp_pixel) {
@@ -117,3 +153,7 @@ void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float s
         }
     }
 }
+
+
+
+*/
