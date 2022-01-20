@@ -5,7 +5,7 @@
 :: build clean --> clean
 
 :: Project related variables
-set BIN_PATH=bin\windows
+set BIN_PATH="bin\windows"
 set PROG_NAME="main.exe"
 set SRC_FILES="..\..\src\*.c"
 
