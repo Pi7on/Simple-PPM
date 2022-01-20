@@ -21,8 +21,3 @@ PPMImage *PPM_rotate_counterclockwise(PPMImage *input){
     //for the time beeing:
     return PPM_rotate_clockwise(PPM_rotate_clockwise(PPM_rotate_clockwise(input)));
 }
-
-/*
-https://stackoverflow.com/questions/49641245/how-to-rotate-a-c-sharp-mn-matrix-clockwise?noredirect=1&lq=1
-https://stackoverflow.com/questions/29634857/rotating-a-ppm-image-90-degrees-to-the-right-in-c
-*/
