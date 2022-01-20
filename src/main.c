@@ -1,6 +1,6 @@
 #include "dither.h"
 #include "ppm.h"
-#include "stdio.h"
+#include <stdio.h>
 
 #define DATAPATH "..\\..\\data\\"
 
