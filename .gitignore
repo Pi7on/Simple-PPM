@@ -7,5 +7,5 @@ show.bat
 notes.txt
 cl_manual.txt
 
-src/demo.c
-src/main.c
+demo.c
+main.c

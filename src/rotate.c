@@ -1,41 +1,23 @@
 #include "rotate.h"
-
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "ppm.h"
+PPMImage *PPM_rotate_clockwise(PPMImage *input){
 
-void PPMImage_flip_horizontally(PPMImage *input) {
-    for (unsigned int y = 0; y < input->h; y++) {
-        for (unsigned int x = 0; x < (input->w / 2); x++) {
-            PPMPixel *a = &(input->data[x + (y * input->w)]);
-            PPMPixel *b = &(input->data[(input->w - x - 1) + (y * input->w)]);
-            PPMPixel_swap(a, b);
+    PPMImage *output = PPMImage_create(input->h, input->w, 0);
+    int new_y, new_x = 0;
+
+    for (int y = input->h - 1; y >= 0; y--) {
+        new_y = 0;
+        for (int x = 0; x < input->w; x++) {
+            output->data[x * output->w + y] = input->data[new_x * input->w + new_y];
+            new_y++;
         }
+        new_x++;
     }
+    return output;
 }
 
-void PPMImage_flip_vertically(PPMImage *input) {
-    //TODO
-}
-
-PPMImage *PPMImage_rotate_90(PPMImage *input, int steps) {
-    if (steps % 1 == 0) {
-        //TODO rotate 90
-    }
-
-    if (steps % 2 == 0) {
-        PPMImage *output = PPMImage_create(input->w, input->h, 0);
-        output->data = input->data;
-        PPMImage_flip_vertically(output);
-        return output;
-    }
-
-    if (steps % 3 == 0) {
-        //TODO rotate -90
-    }
-
-    if (steps % 4 == 0) {
-        return input;
-    }
+PPMImage *PPM_rotate_counterclockwise(PPMImage *input){
+    //for the time beeing:
+    return PPM_rotate_clockwise(PPM_rotate_clockwise(PPM_rotate_clockwise(input)));
 }
