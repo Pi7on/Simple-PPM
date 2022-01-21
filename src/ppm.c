@@ -7,6 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void PPMPixel_swap(PPMPixel *a, PPMPixel *b) {
+    PPMPixel temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
 PPMColor PPMColor_compose(unsigned char r, unsigned char g, unsigned char b) {
     PPMColor ret = 0;  //shouldn't C initialize to zero? (bacause if I don't, I get wrong colors)
     ret = ret | (((unsigned int)b) << (8 * 0));

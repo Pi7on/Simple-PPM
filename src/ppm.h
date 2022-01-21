@@ -31,6 +31,8 @@ typedef struct {
     };
 } PPMPixel;
 
+void PPMPixel_swap(PPMPixel *a, PPMPixel *b);
+
 typedef unsigned int PPMColor;
 PPMColor PPMColor_compose(unsigned char r, unsigned char g, unsigned char b);
 
