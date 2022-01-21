@@ -20,22 +20,22 @@ void PPMImage_flip_vertically(PPMImage *input) {
 }
 
 PPMImage *PPMImage_rotate_90(PPMImage *input, int steps) {
-    if (steps % 1 == 0) {
-        //TODO rotate 90
-    }
-
-    if (steps % 2 == 0) {
-        PPMImage *output = PPMImage_create(input->w, input->h, 0);
-        output->data = input->data;
-        PPMImage_flip_vertically(output);
-        return output;
-    }
-
-    if (steps % 3 == 0) {
-        //TODO rotate -90
-    }
-
-    if (steps % 4 == 0) {
-        return input;
+    int s = steps % 4;  // reduce steps to a value between 0 a 3
+    switch (s) {
+        case 0: {
+            return input;
+        }
+        case 1: {
+            //rotate 90
+            //return
+        }
+        case 2: {
+            //flip vertically
+            //return
+        }
+        case 3: {
+            //(flip vertically and rotate 90) OR (rotate -90), whichever turns out faster
+            //return
+        }
     }
 }
