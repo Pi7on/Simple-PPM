@@ -19,13 +19,13 @@ void addError(PPMImage *input, double factor, unsigned int x, unsigned int y, in
 
     PPMPixel pix = input->data[x + (input->w * y)];
 
-    int new_r = pix.chan.r + errR * factor;
-    int new_g = pix.chan.g + errG * factor;
-    int new_b = pix.chan.b + errB * factor;
+    int new_r = (int)round(pix.chan.r + errR * factor);
+    int new_g = (int)round(pix.chan.g + errG * factor);
+    int new_b = (int)round(pix.chan.b + errB * factor);
 
-    pix.chan.r = CLAMP(new_r, 0, 255);
-    pix.chan.g = CLAMP(new_g, 0, 255);
-    pix.chan.b = CLAMP(new_b, 0, 255);
+    pix.chan.r = (unsigned char)CLAMP(new_r, 0, 255);
+    pix.chan.g = (unsigned char)CLAMP(new_g, 0, 255);
+    pix.chan.b = (unsigned char)CLAMP(new_b, 0, 255);
 
     input->data[x + ((input->w) * y)] = pix;
 }
@@ -37,13 +37,13 @@ void distributeError(PPMImage *input, unsigned int x, unsigned int y, int errR, 
     addError(input, 1.0 / 16.0, x + 1, y + 1, errR, errG, errB);
 }
 
-PPMImage *PPM_filter_FSDither(PPMImage *input, unsigned int steps) {
+PPMImage *PPM_filter_FSDither(PPMImage *input, unsigned int taget_bits_per_channel) {
     PPMImage *out = PPMImage_create(input->w, input->h, 0);
 
     for (unsigned int y = 0; y < out->h; y++) {
         for (unsigned int x = 0; x < out->w; x++) {
             PPMPixel old_p = input->data[x + (input->w * y)];
-            PPMPixel new_p = quantize_pixel(255.0, steps, old_p);
+            PPMPixel new_p = quantize_pixel(255.0, taget_bits_per_channel, old_p);
             input->data[x + (input->w * y)] = new_p;
 
             int errR = old_p.chan.r - new_p.chan.r;
