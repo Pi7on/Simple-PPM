@@ -52,6 +52,7 @@ PPMImage *PPMImage_create(unsigned int w, unsigned int h, PPMColor color);
 void PPMImage_destroy(PPMImage *img);
 PPMImage *PPMImage_read(const char *filename);
 void PPMImage_write(const char *filename, PPMImage *img);
+PPMImage *PPMImage_copy(PPMImage *input);
 
 /**
  * @param[in] img: Image to draw on.

@@ -177,6 +177,12 @@ void PPMImage_write(const char *filename, PPMImage *img) {
     fclose(fp);
 }
 
+PPMImage *PPMImage_copy(PPMImage *input) {
+    PPMImage *output = PPMImage_create(input->w, input->h, 0);
+    output->data = input->data;
+    return output;
+}
+
 void PPMImage_draw_color(PPMImage *img, int px, int py, PPMColor color) {
     img->data[py * img->w + px].val = color;
 }
