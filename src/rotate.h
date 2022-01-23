@@ -4,6 +4,8 @@
 #include "ppm.h"
 void PPMImage_flip_horizontally(PPMImage *input);
 void PPMImage_flip_vertically(PPMImage *input);
+PPMImage *PPMImage_rotate_clockwise(PPMImage *input);
+PPMImage *PPMImage_transpose(PPMImage *input);
 PPMImage *PPMImage_rotate_90(PPMImage *input, int steps);
 
 #endif  //ROTATE_H
