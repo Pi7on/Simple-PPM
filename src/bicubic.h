@@ -1,16 +1,20 @@
 #ifndef BICUBIC_H
 #define BICUBIC_H
 
-#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "ppm.h"
 
-float cubic_hermite(float A, float B, float C, float D, float t);
+double cubicInterpolate(double values[4], double x);
 
-void get_pixel_clamped(PPMImage *source_image, int x, int y, uint8_t *temp_pixel);
+PPMPixel bilinearInterpolate(PPMImage* img, double x, double y);
 
-void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample);
+PPMPixel bicubicInterpolate(PPMImage* img, double posX, double posY);
 
-void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float scale);
+PPMPixel bicubicInterpolateBuffered(PPMImage* img, double posX, double posY);
+
+PPMImage* resize_bicubic(PPMImage* src, unsigned int target_width,
+                         unsigned int target_height);
 
 #endif /* BICUBIC_H */
