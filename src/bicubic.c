@@ -1,159 +1,158 @@
-
 #include "bicubic.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "helpers.h"
-/*
+#include "ppm.h"
 
-// rivece un peso, lo prametrizza in base a B e C, e lo ritorna.
-float MitchellNetravali(float t, float B, float C) {
-    float at = ABS(t);
-    if (at < 1.0f) {
-        return ((12 - 9 * B - 6 * C) * at * at * at +
-                (-18 + 12 * B + 6 * C) * at * at +
-                (6 - 2 * B)) /
-               6;
+/**
+ * Cubic interpolation for a given set of points and x value.
+ *
+ * @param values An array of 4 pixel intensity values.
+ * @param x The position (relative to the four values) to interpolate.
+ * @return The interpolated intensity value.
+ */
+double cubicInterpolate(double values[4], double x) {
+  return values[1] + 0.5 * x *
+                         (values[2] - values[0] +
+                          x * (2.0 * values[0] - 5.0 * values[1] +
+                               4.0 * values[2] - values[3] +
+                               x * (3.0 * (values[1] - values[2]) + values[3] -
+                                    values[0])));
+}
 
-    } else if ((at >= 1) && (at < 2)) {
-        return ((-B - 6 * C) * at * at * at +
-                (6 * B + 30 * C) * at * at + (-12 * B - 48 * C) * at + (8 * B + 24 * C)) /
-               6;
-    } else {
-        return 0;
+PPMPixel bilinearInterpolate(PPMImage* img, double x, double y) {
+  int x1 = (int)x;
+  int y1 = (int)y;
+  int x2 = x1 + 1;
+  int y2 = y1 + 1;
+
+  // Clamp the coordinates to ensure they are within bounds
+  x1 = (x1 < 0) ? 0 : (x1 >= img->w) ? img->w - 1 : x1;
+  y1 = (y1 < 0) ? 0 : (y1 >= img->h) ? img->h - 1 : y1;
+  x2 = (x2 < 0) ? 0 : (x2 >= img->w) ? img->w - 1 : x2;
+  y2 = (y2 < 0) ? 0 : (y2 >= img->h) ? img->h - 1 : y2;
+
+  // Get four neighboring pixels
+  PPMPixel p11 = img->data[y1 * img->w + x1];
+  PPMPixel p12 = img->data[y2 * img->w + x1];
+  PPMPixel p21 = img->data[y1 * img->w + x2];
+  PPMPixel p22 = img->data[y2 * img->w + x2];
+
+  double alpha = x - x1;
+  double beta = y - y1;
+
+  unsigned char r = (1 - alpha) * (1 - beta) * p11.chan.r +
+                    (1 - alpha) * beta * p12.chan.r +
+                    alpha * (1 - beta) * p21.chan.r + alpha * beta * p22.chan.r;
+
+  unsigned char g = (1 - alpha) * (1 - beta) * p11.chan.g +
+                    (1 - alpha) * beta * p12.chan.g +
+                    alpha * (1 - beta) * p21.chan.g + alpha * beta * p22.chan.g;
+
+  unsigned char b = (1 - alpha) * (1 - beta) * p11.chan.b +
+                    (1 - alpha) * beta * p12.chan.b +
+                    alpha * (1 - beta) * p21.chan.b + alpha * beta * p22.chan.b;
+
+  PPMPixel result = {.chan = {b, g, r, 0}};
+  return result;
+}
+
+PPMPixel bicubicInterpolate(PPMImage* img, double posX, double posY) {
+  int i, j;
+  double interpolatedValues[4];
+  PPMPixel surroundingPixels[4][4];
+
+  // Collect surrounding 16 pixels around the position
+  for (i = -1; i <= 2; ++i) {
+    for (j = -1; j <= 2; ++j) {
+      int x = (int)posX + i;
+      int y = (int)posY + j;
+
+      // x = (x < 0) ? 0 : (x >= img->w) ? img->w - 1 : x;
+      // y = (y < 0) ? 0 : (y >= img->h) ? img->h - 1 : y;
+
+      // Reflect pixels at the borders
+      x = (x < 0) ? -x : (x >= img->w) ? 2 * img->w - x - 2 : x;
+      y = (y < 0) ? -y : (y >= img->h) ? 2 * img->h - y - 2 : y;
+
+      surroundingPixels[i + 1][j + 1] = img->data[y * img->w + x];
     }
+  }
+
+  // Perform cubic interpolation for red, green, and blue channels separately
+
+  // Red channel
+  for (i = 0; i < 4; ++i) {
+    double redValues[4] = {(double)surroundingPixels[i][0].chan.r,
+                           (double)surroundingPixels[i][1].chan.r,
+                           (double)surroundingPixels[i][2].chan.r,
+                           (double)surroundingPixels[i][3].chan.r};
+    interpolatedValues[i] = cubicInterpolate(redValues, posY - (int)posY);
+  }
+  unsigned char r =
+      (unsigned char)cubicInterpolate(interpolatedValues, posX - (int)posX);
+
+  // Green channel
+  for (i = 0; i < 4; ++i) {
+    double greenValues[4] = {(double)surroundingPixels[i][0].chan.g,
+                             (double)surroundingPixels[i][1].chan.g,
+                             (double)surroundingPixels[i][2].chan.g,
+                             (double)surroundingPixels[i][3].chan.g};
+    interpolatedValues[i] = cubicInterpolate(greenValues, posY - (int)posY);
+  }
+  unsigned char g =
+      (unsigned char)cubicInterpolate(interpolatedValues, posX - (int)posX);
+
+  // Blue channel
+  for (i = 0; i < 4; ++i) {
+    double blueValues[4] = {(double)surroundingPixels[i][0].chan.b,
+                            (double)surroundingPixels[i][1].chan.b,
+                            (double)surroundingPixels[i][2].chan.b,
+                            (double)surroundingPixels[i][3].chan.b};
+    interpolatedValues[i] = cubicInterpolate(blueValues, posY - (int)posY);
+  }
+  unsigned char b =
+      (unsigned char)cubicInterpolate(interpolatedValues, posX - (int)posX);
+
+  // Construct the resulting pixel from the interpolated channel values
+  PPMPixel result = {.chan = {b, g, r, 0}};
+  return result;
 }
 
-// hermite: b=0 c=0
-// https://legacy.imagemagick.org/Usage/img_diagrams/cubic_survey.gif
-float cubic_hermite(float A, float B, float C, float D, float t) {
-    float a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;
-    float b = A - (5.0f * B) / 2.0f + 2.0f * C - D / 2.0f;
-    float c = -A / 2.0f + C / 2.0f;
-    float d = B;
-
-    return (a * CUBE(t) +
-            b * SQUARE(t) +
-            c * t +
-            d);
+PPMPixel bicubicInterpolateBuffered(PPMImage* img, double posX, double posY) {
+  // Check if pixel is near the borders
+  if (posX < 2 || posX > img->w - 3 || posY < 2 || posY > img->h - 3) {
+    return bilinearInterpolate(img, posX, posY);
+  }
+  return bicubicInterpolate(img, posX, posY);
 }
 
-float cubic_BC(float A, float B, float C, float D, float t) {
-    float a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;
-    float b = A - (5.0f * B) / 2.0f + 2.0f * C - D / 2.0f;
-    float c = -A / 2.0f + C / 2.0f;
-    float d = B;
+/**
+ * Resize an image using bicubic interpolation.
+ *
+ * @param src The source image.
+ * @param target_width The desired width.
+ * @param target_height The desired height.
+ * @return A pointer to the resized image.
+ */
+PPMImage* resize_bicubic(PPMImage* src, unsigned int target_width,
+                         unsigned int target_height) {
+  PPMImage* dest = (PPMImage*)malloc(sizeof(PPMImage));
+  dest->w = target_width;
+  dest->h = target_height;
+  dest->data =
+      (PPMPixel*)malloc(target_width * target_height * sizeof(PPMPixel));
 
-    t = MitchellNetravali(t, 0, 0);
+  double scaleX = (double)src->w / target_width;
+  double scaleY = (double)src->h / target_height;
 
-    return (a * CUBE(t) +
-            b * SQUARE(t) +
-            c * t +
-            d);
-}
-
-void get_pixel_clamped(PPMImage *source_image, int x, int y, uint8_t *temp_pixel) {
-    // TODO: is this cast always safe?
-    //                        V
-    int cx = CLAMP(x, 0, (signed int)source_image->w - 1);
-    int cy = CLAMP(y, 0, (signed int)source_image->h - 1);
-
-    temp_pixel[0] = source_image->data[cx + (source_image->w * cy)].chan.r;
-    temp_pixel[1] = source_image->data[cx + (source_image->w * cy)].chan.g;
-    temp_pixel[2] = source_image->data[cx + (source_image->w * cy)].chan.b;
-}
-
-void sample_bicubic(PPMImage *source_image, float u, float v, uint8_t *sample) {
-    float x = (u * source_image->w) - 0.5f;
-    int xint = (int)floor(x);
-    float xfract = x - xint;
-
-    float y = (v * source_image->h) - 0.5f;
-    int yint = (int)floor(y);
-    float yfract = y - yint;
-
-    uint8_t p00[3];
-    uint8_t p10[3];
-    uint8_t p20[3];
-    uint8_t p30[3];
-
-    uint8_t p01[3];
-    uint8_t p11[3];
-    uint8_t p21[3];
-    uint8_t p31[3];
-
-    uint8_t p02[3];
-    uint8_t p12[3];
-    uint8_t p22[3];
-    uint8_t p32[3];
-
-    uint8_t p03[3];
-    uint8_t p13[3];
-    uint8_t p23[3];
-    uint8_t p33[3];
-
-    //printf("y: %f - x: %f --- yint: %d - xint:%d\n", y, x, yint, xint);
-
-    // 1st row
-    get_pixel_clamped(source_image, xint - 1, yint - 1, p00);
-    get_pixel_clamped(source_image, xint + 0, yint - 1, p10);
-    get_pixel_clamped(source_image, xint + 1, yint - 1, p20);
-    get_pixel_clamped(source_image, xint + 2, yint - 1, p30);
-
-    // 2nd row
-    get_pixel_clamped(source_image, xint - 1, yint + 0, p01);
-    get_pixel_clamped(source_image, xint + 0, yint + 0, p11);
-    get_pixel_clamped(source_image, xint + 1, yint + 0, p21);
-    get_pixel_clamped(source_image, xint + 2, yint + 0, p31);
-
-    // 3rd row
-    get_pixel_clamped(source_image, xint - 1, yint + 1, p02);
-    get_pixel_clamped(source_image, xint + 0, yint + 1, p12);
-    get_pixel_clamped(source_image, xint + 1, yint + 1, p22);
-    get_pixel_clamped(source_image, xint + 2, yint + 1, p32);
-
-    // 4th row
-    get_pixel_clamped(source_image, xint - 1, yint + 2, p03);
-    get_pixel_clamped(source_image, xint + 0, yint + 2, p13);
-    get_pixel_clamped(source_image, xint + 1, yint + 2, p23);
-    get_pixel_clamped(source_image, xint + 2, yint + 2, p33);
-
-    // perform interpolation on each row
-    for (int i = 0; i < 3; i++) {
-        float col0 = cubic_hermite(p00[i], p10[i], p20[i], p30[i], xfract);
-        float col1 = cubic_hermite(p01[i], p11[i], p21[i], p31[i], xfract);
-        float col2 = cubic_hermite(p02[i], p12[i], p22[i], p32[i], xfract);
-        float col3 = cubic_hermite(p03[i], p13[i], p23[i], p33[i], xfract);
-
-        // perform interpolation on the 4 values obtained from previous step
-        float value = cubic_hermite(col0, col1, col2, col3, yfract);
-
-        value = CLAMP(value, 0.0f, 255.0f);
-
-        sample[i] = (uint8_t)value;
+  for (unsigned int x = 0; x < target_width; x++) {
+    for (unsigned int y = 0; y < target_height; y++) {
+      dest->data[y * target_width + x] =
+          bicubicInterpolateBuffered(src, x * scaleX, y * scaleY);
     }
+  }
+
+  return dest;
 }
-
-void resize_bicubic(PPMImage *source_image, PPMImage *destination_image, float scale) {
-    uint8_t sample[3];
-
-    destination_image->w = (unsigned int)((float)(source_image->w) * scale);
-    destination_image->h = (unsigned int)((float)(source_image->h) * scale);
-
-    for (unsigned int y = 0; y < destination_image->h; y++) {
-        float v = (float)y / (float)(destination_image->h);
-        for (unsigned int x = 0; x < destination_image->w; x++) {
-            float u = (float)x / (float)(destination_image->w);
-
-            sample_bicubic(source_image, u, v, sample);
-
-            destination_image->data[x + ((destination_image->w) * y)].chan.r = sample[0];
-            destination_image->data[x + ((destination_image->w) * y)].chan.g = sample[1];
-            destination_image->data[x + ((destination_image->w) * y)].chan.b = sample[2];
-        }
-    }
-}
-
-
-
-*/
